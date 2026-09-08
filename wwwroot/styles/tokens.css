@@ -1,0 +1,1163 @@
+/* ==========================================================================
+   tokens.css — Design tokens, two-layer structure (CLAUDE.md §4)
+
+   Layer 1: Variables — raw/primitive values (--color-blue-00, --font-weight-medium)
+   Layer 2: Tokens     — semantic aliases referencing a Variable, scoped to
+                          their use (--{component}-color-{role}, --{component}-font-{property})
+
+   Naming convention is the one already established for the sidebar
+   component family — reuse it for every token added below, do not invent
+   a different pattern. Real values come from Figma, screen by screen;
+   everything here is a placeholder until then. Never reference a raw hex
+   value or a bare pixel number directly in component CSS — always go
+   through a semantic token (CLAUDE.md §4).
+   ========================================================================== */
+
+:root {
+
+  /* ------------------------------------------------------------------------
+     COLOR
+     Variables: --color-{hue}-{shade} (e.g. --color-blue-00)
+     Tokens:    --{component}-color-{role} (e.g. --sidebar-color-bg)
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  --color-white-ff: #FFFFFF;
+  --color-white-ff-54: rgba(255, 255, 255, 0.54);
+  --color-black-00: #000000;
+  --color-black-00-54: rgba(0, 0, 0, 0.54);
+  --color-black-00-50: rgba(0, 0, 0, 0.50);
+  --color-black-00-38: rgba(0, 0, 0, 0.38);
+  --color-black-00-25: rgba(0, 0, 0, 0.25);
+  --color-gray-d9: #d9d9d9;
+  --color-gray-bd: #bdbdbd;
+  --color-gray-39: #395360;
+  --color-gray-39-50: rgba(57, 83, 96, 0.50);
+  --color-blue-ba: #bad9ef;
+  --color-blue-75: #75bcd9;
+  --color-blue-00: #009DDC;
+  --color-blue-03: #0386ba;
+  --color-blue-1f: #1f6f8f;
+  --color-darkblue--15: #152934;
+  --color-lightgray-fa: #FAFAFA;
+  --color-lightgray-f3: #F3F3F3;
+  --color-lightgray-fc: #fcfcfc;
+  --color-lightgray-e7: #e7e7e7;
+  --color-lightgray-de: #DEDEDE;
+  --color-lightgray-dc: #dcdcdc;
+  --color-red-ed: #ED4636;
+  --color-red-f8: #F8D0CC;
+  --color-green-00: #00C853;
+  --color-orange-ff: #ff9800;
+  /* Accessibility-driven dark substitutes for the two above, added for
+     AppAlert (see that component's tokens.css section below): both literal
+     hues fail 4.5:1 as TEXT/ICON against the pill tints they sit on
+     (--color-orange-ff ~1.91:1, --color-green-00 ~2.05:1 — computed, not
+     eyeballed). Each substitute is the SAME hue angle as the literal color
+     (~36 deg orange, ~145 deg green per HSL, i.e. genuinely "a darker
+     version of this exact color," not an unrelated swatch), just lower
+     lightness until 4.5:1 clears — same fix pattern as
+     --stepper-color-text-on-brand-safe. Full candidate table in
+     DECISIONS.md. */
+  --color-orange-99: #995C00; /* 4.79:1 vs the warning pill's tint below */
+  --color-green-70: #00702F;  /* 5.74:1 vs the success pill's tint below */
+  /* AppAlert pill tints — pixel-sampled directly from
+     demo/ScreenB/TaskTwo_from_figma_design.png (CLAUDE.md rule 1), not
+     eyeballed: neither existed as a Variable in this file before. */
+  --color-peach-fa: #FAF0E1; /* warning pill background */
+  --color-mint-e6: #E6FAEE;  /* success pill background */
+  /* AppChip tint — pixel-sampled from the "نموذج 1" chip on
+     TaskTwo_from_figma_design.png (CLAUDE.md rule 1), same naming pattern as
+     the two tints just above (hue name + hex shade suffix); nothing existing
+     matched. */
+  --color-lightblue-e6: #E6F6FC; /* chip background */
+  /* PLACEHOLDER — disabled button text, not yet in the Figma "Colors"
+     collection (only the #E7E7E7 disabled background was specified).
+     Mid-gray stand-in, same status as --color-field-placeholder above but
+     kept as its own Variable (not reused across components) since it's a
+     genuinely new raw color, not a semantic alias of an existing one.
+     Confirm the exact gray in Figma later. */
+  --color-gray-9e: #9E9E9E;
+
+  /* Tokens */
+  /* Sidebar (AppSidebar / SidebarItem / SidebarParentItem) */
+  --sidebar-color-bg: var(--color-white-ff);
+  --sidebar-color-text-default: var(--color-gray-39);
+  --sidebar-color-text-active: var(--color-white-ff);
+  --sidebar-color-text-hover: var(--color-blue-00);
+  --sidebar-color-stroke: var(--color-lightgray-de);
+  --sidebar-color-bg-hover: var(--color-lightgray-fa);
+  --sidebar-color-bg-active: var(--color-blue-00);
+  --sidebar-color-bg-active-parent: var(--color-lightgray-f3);
+
+  /* Header*/
+  --header-color-bg: var(--color-white-ff);
+  --header-color-stroke: var(--color-lightgray-de);
+  --header-color-profile-bg:var(--color-blue-00);
+  --header-color-profile-text: var(--color-white-ff);
+  --header-color-icon: var(--color-gray-39);
+  --header-color-lable-bg:var(--color-red-ed);
+  --header-color-lable-text: var(--color-white-ff);
+  --header-color-switchOffIcon-bg:var(--color-gray-39);
+  --header-color-switchOnIcon-bg:var(--color-blue-00);
+  --header-color-switchOffIcon:var(--color-lightgray-de);
+  --header-color-switchOnIcon:var(--color-white-ff);
+  --header-color-switchOff-bg:var(--color-black-00-54);
+  --header-color-switchOn-bg:var(--color-white-00-54);
+  --header-btn-bg:var(--color-green-00);
+  --header-btn-text:var(--color-white-ff);
+  --header-color-bg-hover: var(--color-lightgray-fa);
+
+  /* Field (AppField<T> — shared component, CLAUDE.md §3.1, used by Screen A
+     & B, backs FieldType Text/Select/Date). ALL 26 tokens below are REAL
+     values, read directly from the Figma token group named "Date Picker
+     Field" — that Figma group NAME is misleading: these 26 tokens are
+     AppField's general BASE/SHARED style (the plain default look used by
+     Text, Select, AND Date alike), not something Date-exclusive. Renamed
+     the framing here accordingly so nobody reading this later assumes these
+     are Date-only; the actual --field-color-* names/values are unchanged.
+     (Confirmed count: 26 — the earlier "24" was a miscount, not a
+     discrepancy on this end.) The old 32-token placeholder set (8 combined
+     default/enabled x resting/hover/disabled-* states, independently named)
+     is DELETED, not left coexisting — that shape was this task's own
+     placeholder invention before any real values existed; Figma's actual
+     group uses a different, simpler shape (6 named states x 3-5 properties
+     each), used below.
+
+     STRUCTURAL CORRECTION: "Filled" is not one shared state across Types.
+     Figma has two distinct filled looks:
+       - Selected — blue-accented, Date-only (a date has been chosen)
+       - FillOut  — gray-accented, Text/Select-only (has a value)
+     AppField.razor now emits a per-Type modifier class
+     (app-field-input--date / --text / --select) so mudblazor-overrides.css
+     can tell these apart at the CSS level — see that file.
+
+     Every raw --color-* Variable these reference already existed in this
+     file (--color-lightgray-fc/-de/-dc/-e7, --color-gray-bd/-39/-39-50,
+     --color-blue-ba/-00, --color-black-00-25/-38/-50, --color-darkblue--15,
+     --color-white-ff) — none needed to be added. Two naming mismatches
+     flagged rather than silently duplicated (CLAUDE.md §5 — one name per
+     value):
+       - "--color-white" (as given) doesn't exist; the existing white
+         Variable is --color-white-ff (#FFFFFF) — reused instead of adding a
+         second, identically-valued white Variable.
+       - "--color-darkblue-15" (single dash, as given) doesn't exist either;
+         the existing Variable is --color-darkblue--15 (double dash — a
+         pre-existing naming quirk from before this task, not introduced
+         here) — reused as-is rather than adding a near-duplicate name. */
+
+  /* Default (empty, resting) — 3 properties. AppField's base/shared look,
+     applies to Text, Select, and Date alike (Figma named the source group
+     "Date Picker Field", but this state applies to all three Types). */
+  --field-color-bg-default: var(--color-lightgray-fc);
+  --field-color-stroke-default: var(--color-lightgray-de);
+  --field-color-text-default: var(--color-black-00-38);
+
+  /* Hover (empty, hovered) — 3 properties. Same base/shared family, all three Types. */
+  --field-color-bg-hover: var(--color-white-ff);
+  --field-color-stroke-hover: var(--color-gray-bd);
+  --field-color-text-hover: var(--color-black-00-50);
+
+  /* Disabled — 3 properties. Base/shared family, all three Types. Figma
+     gives ONE disabled look regardless of whether the field has a value —
+     simplified from the old placeholder model, which wrongly split
+     disabled-empty vs disabled-filled; see mudblazor-overrides.css. */
+  --field-color-bg-disabled: var(--color-lightgray-e7);
+  --field-color-stroke-disabled: var(--color-lightgray-dc);
+  --field-color-text-disabled: var(--color-black-00-25);
+
+  /* Focused — 5 properties, base/shared family — shared by all three Types.
+     This is what row 4 ("Filled — Focused") actually renders with, not
+     Selected/FillOut, since focus always wins over content state (confirmed
+     reading from the previous round).
+     SUPERSEDES the earlier note in this file ("standalone Focused has no
+     --field-color-*, reuse --focus-ring-* only") — that was written before
+     real Figma data existed; Figma's Focused state does have its own
+     border/bg/label/icon colors. Both now apply together: these tokens
+     drive the actual Figma-specified colors, and the shared --focus-ring-*
+     outline (components.css, unchanged) stays layered on top as the
+     generic visible-focus-indicator CLAUDE.md §6 requires app-wide — one
+     doesn't replace the other. */
+  --field-color-bg-focused: var(--color-white-ff);
+  --field-color-stroke-focused: var(--color-blue-ba);
+  --field-color-label-focused: var(--color-blue-00);
+  --field-color-placeholder-focused: var(--color-black-00-50);
+  --field-color-icon-focused: var(--color-blue-00);
+
+  /* Selected — 5 properties — Date ONLY, filled+resting. This is the ONE
+     state in this token family that genuinely IS Date-specific (unlike the
+     rest of the "Date Picker Field" group, which is really the base/shared
+     look) — the Selected-vs-FillOut split below is real and intentional,
+     not a naming artifact; don't fold it back into a shared state. */
+  --field-color-bg-selected: var(--color-white-ff);
+  --field-color-stroke-selected: var(--color-blue-ba);
+  --field-color-label-selected: var(--color-blue-00);
+  --field-color-placeholder-selected: var(--color-darkblue--15);
+  --field-color-icon-selected: var(--color-blue-00);
+
+  /* FillOut — 5 properties — Text/Select ONLY, filled+resting. The other
+     genuinely Type-specific half of the Selected/FillOut split above. */
+  --field-color-bg-fillout: var(--color-white-ff);
+  --field-color-stroke-fillout: var(--color-gray-39-50);
+  --field-color-label-fillout: var(--color-gray-39);
+  --field-color-placeholder-fillout: var(--color-darkblue--15);
+  --field-color-icon-fillout: var(--color-gray-39);
+
+  /* Error — 2 properties, unchanged from the previous round (already real
+     Figma values, not part of this 26-count — Error_txt/Error_stroke are
+     their own group). */
+  --field-color-stroke-error: var(--color-red-f8); /* Error_stroke, Colors/Red#f8 — CONFIRMED */
+  --field-color-text-error: var(--color-red-ed);   /* Error_txt, Colors/Red#ed — CONFIRMED */
+
+  /* Everything below is a bridging ALIAS, not an independent Figma value:
+     each resolves to an already-confirmed color above, applied to an
+     element category (icon) that Figma's Default/Hover/Disabled/Error
+     entries don't call out on their own (only Focused/Selected/FillOut give
+     an explicit icon color). Rather than leave the field's own icons
+     (calendar / dropdown arrow / consumer AdornmentIcon) uncolored in these
+     four states, each is aliased to that state's own text color — same
+     reasoning applied to the error icon last round. Flag if Figma specifies
+     any of these independently later. */
+  --field-color-icon-default: var(--field-color-text-default);
+  --field-color-icon-hover: var(--field-color-text-hover);
+  --field-color-icon-disabled: var(--field-color-text-disabled);
+  --field-color-icon-error: var(--field-color-text-error);
+
+  /* Disabled must not be signaled by color alone (CLAUDE.md §6) — paired
+     with reduced opacity + not-allowed cursor in mudblazor-overrides.css.
+     Unchanged from before. */
+  --field-disabled-opacity: var(--a11y-disabled-opacity);
+
+
+  /* ------------------------------------------------------------------------
+     Button (AppButton — shared component, CLAUDE.md §3.1, used identically
+     by Screen A and Screen B). Primary/Filled variant only for now —
+     Secondary/Outlined/Text/etc. are out of scope until Figma defines them
+     (CLAUDE.md rule 7: don't invent variants that weren't asked for).
+     ------------------------------------------------------------------------ */
+
+  --btn-pri-color-text: var(--color-white-ff);            /* btn_pri_txt, #FFFFFF */
+  --btn-pri-color-bg: var(--color-blue-00);               /* btn_pri — same brand blue already used by the sidebar */
+
+  /* btn_pri_hover / btn_pri_onClick — FLAGGED: your instruction described
+     both --color-blue-03 and --color-blue-75 as "NEW raw variable, add it",
+     but both already exist in the COLOR Variables above (lines ~37-39,
+     unused by any token until now) — verified by reading this file, not
+     assumed. Reused rather than adding a second, differently-named
+     duplicate of the same values (CLAUDE.md rule 5). One more flag on top
+     of that: --color-blue-75 (#75bcd9) is *lighter* than both
+     --color-blue-00 (default) and --color-blue-03 (hover) — unusual for a
+     pressed/"onClick" state, which is conventionally darker still. I don't
+     have the actual Figma screenshots in this conversation (none came
+     through as image content), so I can't visually confirm the swatch —
+     using the exact variable you named, but please double-check this one
+     against Figma specifically before treating it as final. */
+  --btn-pri-color-bg-hover: var(--color-blue-03);         /* btn_pri_hover */
+  --btn-pri-color-bg-active: var(--color-blue-75);        /* btn_pri_onClick — see flag above */
+
+  --btn-pri-color-bg-disabled: var(--color-lightgray-e7); /* btn_disable — confirmed #E7E7E7 === existing --color-lightgray-e7, reused rather than a second gray Variable */
+
+  /* PLACEHOLDER — disabled text color wasn't specified in Figma (only the
+     #E7E7E7 background was). CLAUDE.md §6 exempts disabled controls from
+     the 4.5:1 contrast minimum, but they still must be legible and
+     identifiable as disabled without relying on color alone — paired with
+     cursor:not-allowed + reduced opacity in components.css regardless of
+     the exact gray chosen here. NOT a final decision — confirm in Figma. */
+  --btn-pri-color-text-disabled: var(--color-gray-9e);
+  --btn-pri-disabled-opacity: var(--a11y-disabled-opacity);
+
+
+  /* ------------------------------------------------------------------------
+     Action banner (AppActionBanner — shared component, CLAUDE.md §3.1,
+     Figma component "btn_box"). Same 3-state model as AppButton itself
+     (Default/Hover/onClick-pressed) — NO Disabled state, and NO token of
+     its own for any of the 3: every state reuses AppButton's OWN tokens
+     directly (not a coincidental match, the literal same semantic value):
+       Default → --btn-pri-color-bg
+       Hover   → --btn-pri-color-bg-hover
+       onClick → --btn-pri-color-bg-active (already #75bcd9 — CORRECTED per
+                 instruction: an earlier pass here misread this component's
+                 3rd/lightest-blue state as "Disabled" and added a separate
+                 --action-banner-color-bg-disabled token pointing at the same
+                 raw --color-blue-75 Variable. That token and its whole
+                 disabled code path are REMOVED — this is the same onClick/
+                 pressed state AppButton already has, not a second concept
+                 that happens to share a color.) */
+
+
+  /* ------------------------------------------------------------------------
+     Status (semantic status colors — AppStatusCard, CLAUDE.md §3.1/§4).
+     Checked first: no --status-* tokens existed anywhere in this file before
+     this addition. 4 semantic roles, matching AppStatusType's 4 values —
+     confirmed against the Figma reference that ring color tracks STATUS
+     TYPE, not the status-label text (the same word "تمت" appears in both an
+     Info-blue card and a separate Success-green card) — see AppStatusCard's
+     own header comment for the full reasoning.
+     All four reuse EXISTING raw Variables already in this file — no new hex
+     introduced for the color roles themselves.
+
+     RING-STROKE ONLY, NOT TEXT — actually computed, not eyeballed (CLAUDE.md
+     §6: "check against the actual token colors, not by eye"). Contrast
+     ratios of each raw color against a white card background, via the
+     standard relative-luminance formula:
+       --color-green-00  (#00C853) vs white: ~2.24:1
+       --color-orange-ff (#ff9800) vs white: ~2.16:1
+       --color-gray-bd   (#bdbdbd) vs white: ~1.88:1
+       --color-gray-39   (#395360) vs white: ~8.15:1  (the only one that passes)
+     Three of these FAIL both the 4.5:1 normal-text minimum AND the 3:1
+     meaningful-graphical-border minimum (CLAUDE.md §6). That rules out using
+     them for the status-label WORD or the in-ring percentage NUMBER (both
+     real text — 1.4.3 has no "redundant with other content" exception, only
+     1.4.11 graphical-object contrast does). So these four are used for the
+     ring STROKE only (a decorative/reinforcing accent, not the sole carrier
+     of the status — the percentage number and the status-label word next to
+     it, both rendered in a real safe dark color below, already carry the
+     information in full-contrast text regardless of the ring's own hue) —
+     see --status-card-color-status-label / --status-card-color-ring-value
+     below, which are NOT varied per status for exactly this reason.
+     This mirrors a gap that already exists elsewhere in this app (the header
+     sync button uses this same --color-green-00 as a filled background under
+     white text, which computes to the same ~2.24:1 failure) — not a new
+     problem introduced here, but flagged again since it recurs. Revisit if
+     Figma ever supplies text-safe darker variants of these hues.
+     ------------------------------------------------------------------------ */
+
+  --status-color-success: var(--color-green-00);  /* ناجح / تمت at 100% — ring stroke only, see note above */
+  --status-color-warning: var(--color-orange-ff); /* جزئي — ring stroke only */
+  /* CORRECTED — an earlier pass here reused --color-gray-39 for this ring,
+     which was wrong on review: gray-39 is not a distinct "blue" swatch at
+     all, it's this component's own fixed TEXT color (title/status-
+     label/meta/ring-percentage all use it, see below) — reusing it for the
+     Info ring too made Info visually collapse toward Neutral (also a gray)
+     instead of reading as its own hue, and did so for no actual reason: ring
+     color isn't contrast-gated in this design (Success/Warning keep their
+     fully-saturated hues despite failing contrast, precisely because the
+     ring is decorative and the real information rides on the text next to
+     it) — so there was never a contrast argument for avoiding an actual blue
+     here, it just wasn't tried.
+     Switched to --color-blue-1f (#1f6f8f): an EXISTING raw Variable in this
+     file, unused anywhere else (checked), and a genuinely closer visual
+     match to the dark navy/teal ring observed for "قيد التشغيل" (62%) and
+     the 80%/"تمت" card than a repurposed text-gray. Still a screenshot-based
+     visual estimate, not a pixel-sampled/Figma-confirmed value (same caveat
+     as Success/Warning/Neutral above) — revisit if a real Figma hex surfaces.
+     Incidentally also passes text contrast (~5.63:1 vs white) if a future
+     use ever needs that, though nothing here currently relies on it — status
+     label/ring-number text stays on the fixed --status-card-color-* tokens
+     below regardless of StatusType, unchanged by this fix. */
+  --status-color-info: var(--color-blue-1f);
+  --status-color-neutral: var(--color-gray-bd); /* لا يوجد — ring stroke only, see contrast note above */
+
+  /* AppStatusCard's own chrome (title/icon-badge/divider/meta/status-label
+     text) — kept separate from the --status-* ring-stroke roles above.
+     Reuses existing Variables/Tokens throughout, no new hex. */
+  --status-card-color-title: var(--color-gray-39);
+  --status-card-color-badge-bg: var(--color-gray-39); /* same dark navy swatch as the icon badge in every card of the reference — reused, not a new color */
+  --status-card-color-badge-icon: var(--color-white-ff);
+  --status-card-color-divider: var(--panel-color-stroke); /* same stroke already used for the panel border itself */
+  --status-card-color-meta-text: var(--color-black-00-54); /* existing muted-text alpha, already used elsewhere in this file for secondary text */
+  /* Status-label word AND the in-ring percentage number both use this SAME
+     fixed, safe-contrast color regardless of StatusType (~8.15:1, see the
+     Status section above) — NOT tinted per status, per the contrast finding
+     there. The word itself ("ناجح"/"جزئي"/"قيد التشغيل"/"لا يوجد") already
+     differentiates status without relying on color at all, satisfying
+     CLAUDE.md §6's "never color alone" from the opposite direction: color
+     alone was never the plan, but color-as-decoration must not be allowed to
+     make the text illegible either. */
+  --status-card-color-status-label: var(--color-gray-39);
+  --status-card-color-ring-value: var(--color-gray-39);
+
+  /* Panel header (.app-panel-header) — title text + info icon color, Screen
+     B's "بيانات النموذج" section. Pixel-sampled directly off
+     TaskTwo_from_figma_design.png (CLAUDE.md rule 1): the title text
+     (x=1580,y=413) and the info-icon stroke (x=1592-1594,y=405-412) both
+     sample to the exact same #152934 — the existing --color-darkblue--15
+     Variable, not a new hex. One token drives both (title text `color` +
+     the icon's own Color="Color.Inherit"), so they can't independently
+     drift. */
+  --panel-color-title: var(--color-darkblue--15);
+
+  /* Toggle group (AppToggleGroup) — Screen B's "توزيع الأسئلة" mode switch
+     (اختيار متعدد / سحب وإملاء). Selected state deliberately RE-DERIVES the
+     same raw Variables AppButton's --btn-pri-color-bg/-bg-hover/-bg-active/
+     -color-text already use (per instruction: reuse the same blue family
+     verbatim) as SIBLING tokens, not a wrapper around --btn-pri-* — this
+     file's own convention is Tokens reference Variables, not other Tokens
+     (see --panel-color-stroke's note above).
+     Unselected text/icon: literal Figma value pixel-samples to the SAME
+     --color-blue-00 used for the border (#009DDC, confirmed at
+     x=1080-1180,y=617) — but AS TEXT on a white background that only
+     measures 3.06:1 (the same recurring failure already logged for
+     AppButton/AppAlert/AppStepper in DECISIONS.md). The border itself keeps
+     the literal blue-00: a non-text UI component boundary only needs WCAG
+     1.4.11's 3:1, which it already clears. Text/icon reuse the EXISTING
+     --color-blue-1f safe substitute (5.63:1 vs white, same hue family,
+     already used by --status-color-info and the Stepper's Selected label) —
+     not a new color. Full computation in DECISIONS.md. */
+  --toggle-color-bg-selected: var(--color-blue-00);
+  --toggle-color-bg-selected-hover: var(--color-blue-03);
+  --toggle-color-bg-selected-active: var(--color-blue-75);
+  --toggle-color-text-selected: var(--color-white-ff);
+  --toggle-color-bg-unselected: var(--color-white-ff);
+  --toggle-color-border: var(--color-blue-00);
+  --toggle-color-text-unselected: var(--color-blue-1f);
+
+  /* Chip (AppChip) — Screen B's "نموذج 1" tag. Text/icon: literal Figma
+     value samples to --color-blue-00 (#009DDC) again — but against this
+     chip's OWN tint (--color-lightblue-e6, #E6F6FC) it measures only
+     2.77:1, an even worse failure than the white-background case above
+     (recomputed for this specific background, not assumed from that
+     figure). Reuses the SAME existing --color-blue-1f substitute
+     (5.08:1 against this tint) rather than a new color. */
+  --chip-color-bg: var(--color-lightblue-e6);
+  --chip-color-text: var(--color-blue-1f);
+
+  /* Tag (.app-tag) — solid-fill pills on Screen B's question-bank cards
+     ("AudioTest" / "سؤال-2" / "بنك اسئلة"). Source image
+     (demo/ScreenB/UI_ UX 2.jpeg) is a compressed JPEG — pixel-sampling it
+     for exact hex would be less reliable than everywhere else in this file
+     (CLAUDE.md rule 1's spirit: verify, don't guess — but a noisy sample
+     isn't a verification either). Reused already-vetted Variables from this
+     SAME design system instead: --color-blue-00 (the one recurring brand
+     blue, visually matches the primary tag) and --color-gray-39 (the same
+     dark navy already backing AppStatusCard's icon-badge and the sidebar's
+     default text, visually matches the neutral tag). White text on
+     --color-gray-39 = 8.15:1 (already computed in this file) — passes
+     comfortably. White text on --color-blue-00 = 3.06:1 — inherits the SAME
+     known shortfall already flagged (not fixed) on AppButton's own
+     white-on-blue-00 filled variant elsewhere in this file; not a new
+     regression introduced here, kept consistent with that existing choice
+     rather than diverging for this one small tag. */
+  --tag-color-bg-primary: var(--color-blue-00);
+  --tag-color-bg-neutral: var(--color-gray-39);
+  --tag-color-text: var(--color-white-ff);
+
+  /* Question card (AppQuestionCard) — Screen B's question-bank list items.
+     Drag handle uses a muted gray (decorative-only this pass, see the
+     component's own header comment) rather than a brand color, so it doesn't
+     compete visually with the real interactive checkbox next to it. Help
+     icon and body text reuse the existing --color-gray-39 family already
+     used for this same "secondary icon / readable body text" role
+     elsewhere (AppStatusCard, Sidebar). */
+  --qcard-color-drag-handle: var(--color-gray-bd);
+  --qcard-color-help-icon: var(--color-gray-39);
+  --qcard-color-text: var(--color-gray-39);
+
+  /* Question-bank columns (.app-qbank-column) — Screen B's 3-column layout
+     under "مجمع بنوك العناصر". Empty-state border: the reference
+     (UI_ UX 2.jpeg) shows this dashed border in RED/PINK on both empty
+     columns — explicitly flagged by you as a real accessibility/semantic
+     issue from the earlier UX audit (color alone signaling an error/empty
+     state that isn't actually an error) and NOT reproduced here. Reuses the
+     existing NEUTRAL --panel-color-stroke Variable (--color-lightgray-de)
+     instead of a new gray — same stroke already used for every other
+     bordered panel/card in this library, so an empty column reads as
+     "a normal, calm placeholder area," not an alert. */
+  --qbank-color-border-empty: var(--color-lightgray-de);
+  --qbank-color-subtitle: var(--color-black-00-54);
+  --qbank-color-empty-text: var(--color-black-00-54);
+
+
+  /* ------------------------------------------------------------------------
+     Alert (AppAlert — shared component, CLAUDE.md §3.1, Screen B's
+     "إجراء مطلوب" warning strip + the "اخترت عدة أسئلة..." success strip,
+     TaskTwo_from_figma_design.png). ONE component with a Severity param
+     (Warning/Success only for now — Error/Info deferred until a real use
+     case shows up, CLAUDE.md: don't build unused variants speculatively).
+
+     ANATOMY — pixel-sampled directly off the reference PNG at its native
+     1920px width (CLAUDE.md rule 1), not assumed from the initial "tint +
+     border" brief: both strips are a content-sized, fully-rounded (stadium)
+     pill, right-aligned (RTL inline-start), NOT full-width and NOT
+     bordered. Scanned every column across both pills' full bounds (warning:
+     x=1140-1637 / y=298-331; success: x=1220-1608 / y=648-679) — at every
+     edge the background goes directly from the page/card color to the tint
+     color with only ~1px of antialiasing, no distinct border-stroke hue in
+     between. This corrects the original "background tint + border"
+     assumption; flagged rather than silently built with an unverified
+     border.
+
+     COLORS — both literal Figma hues FAIL 4.5:1 as text/icon against their
+     own tint (computed via the standard relative-luminance formula, same as
+     every other contrast finding in this file):
+       --color-orange-ff (#ff9800) vs --color-peach-fa: ~1.91:1
+       --color-green-00  (#00C853) vs --color-mint-e6:  ~2.05:1
+     Same recurring orange/green-family contrast gap already logged for
+     AppStatusCard's ring colors above and in DECISIONS.md's Stepper
+     entries — not a new problem, the same one resurfacing on a new
+     component. Fixed the same way: --color-orange-99 / --color-green-70
+     above (4.79:1 / 5.74:1, both same hue family as the literal colors).
+     ------------------------------------------------------------------------ */
+  --alert-color-bg-warning: var(--color-peach-fa);
+  --alert-color-bg-success: var(--color-mint-e6);
+  --alert-color-icon-warning: var(--color-orange-99);
+  --alert-color-text-warning: var(--color-orange-99);
+  --alert-color-icon-success: var(--color-green-70);
+  --alert-color-text-success: var(--color-green-70);
+  --alert-radius: var(--radius-pill); /* see RADIUS section below — shared with Header's pill, not a second hardcoded 999px */
+  --alert-font-family: var(--font-family-cairo);
+  --alert-font-size: var(--font-size-regular-14); /* visual estimate against the ~34px-tall pill, not pixel-traced to a cap-height measurement — flag if Figma supplies an exact value */
+  --alert-space-gap: var(--space-8);
+  --alert-space-padding-inline: var(--space-16);
+  --alert-space-padding-block: var(--space-8);
+
+
+  /* ------------------------------------------------------------------------
+     Stepper (AppStepper / AppStepItem — shared component, CLAUDE.md §3.1,
+     Figma component "Stepper btn"). 4 states, confirmed against both the
+     component-variants screenshot AND real usage in
+     demo/ScreenB/TaskTwo_from_figma_design.png (the actual "تقسيم الأسئلة /
+     الوحدات" screen) before finalizing:
+       - Pass/Active: 3 variants each (default/hover/onClick) → interactive.
+       - Selected/Disabled: 1 variant each → Disabled is non-interactive;
+         Selected turned out to ALSO be interactive (clickable/navigable) —
+         confirmed directly by you, not guessed — it just has no distinct
+         hover/onClick swatch in Figma, so it keeps one fixed look across
+         hover/focus/pressed (see components.css).
+     Real state semantics (your explicit confirmation, replacing this file's
+     original 3-state guess): for a stepper on step CurrentIndex,
+       index < CurrentIndex      → Pass      (completed, click to go back)
+       index == CurrentIndex     → Active     (the step you're standing on)
+       index == CurrentIndex + 1 → Selected    (next step, open to jump to)
+       index > CurrentIndex + 1  → Disabled    (locked, steps before it aren't done)
+     See AppStepper.razor for the actual GetState() implementation.
+
+     Figma names every bg-role token "..._txt_bg" (e.g. "stepper_Pass_txt_bg"),
+     not just "..._bg" — confirmed structurally, not assumed: that token is
+     meant to double as BOTH the icon-circle fill AND the label text color
+     once the color is used outside the circle. The --stepper-color-text-*
+     tokens below are therefore aliases of the matching --stepper-color-bg-*
+     token, not independently-specified values, EXCEPT Disabled (which has
+     its own explicit txt_icon token, covering icon AND label together).
+
+     TWO NAME CORRECTIONS below, same "flag, don't silently duplicate"
+     handling as elsewhere in this file (CLAUDE.md §5): the requested
+     "--color-darkblue-15" (single dash) doesn't exist — the real Variable
+     already in this file is --color-darkblue--15 (double dash, #152934).
+     The requested "--color-white" doesn't exist either — the real Variable
+     is --color-white-ff (#FFFFFF). Both reused as named below, not
+     re-added under a second name.
+
+     TWO "NEW raw variable" corrections: --color-blue-1f (pass-hover) and
+     --color-gray-39-50 (pass-active) were flagged as new, but BOTH already
+     exist in this file (--color-blue-1f already backs --status-color-info;
+     --color-gray-39-50 already backs the Field family) — reused, not
+     re-added.
+
+     CONTRAST — CHECKED AND FIXED, not left as a flag (CLAUDE.md §6):
+     computed via the standard relative-luminance formula against a white
+     page background (the label sits on the page, not inside the colored
+     circle):
+       --color-blue-00 (#009DDC) vs white: 3.06:1 — fails
+       --color-blue-03 (#0386ba) vs white: 4.10:1 — still fails
+       --color-blue-1f (#1f6f8f) vs white: 5.63:1 — passes
+       --color-darkblue--15 (#152934) vs white: 15.01:1 — passes easily
+       --color-gray-39 (#395360) vs white: 8.14:1 — passes
+     Whichever CSS class renders text derived from the blue-00 family (3.06:1)
+     needs the --color-blue-1f substitute (5.63:1) below it — same blue
+     family/hue lineage, not an arbitrary substitute, already used elsewhere
+     in this file (--status-color-info, --stepper-color-bg-pass-hover), so no
+     new hex is introduced either way. See DECISIONS.md at the repo root for
+     the full writeup and history (which state that substitute currently
+     applies to has changed once already — see below).
+
+     REVERSED THIS PASS, per your explicit confirmed decision — the CSS-CLASS
+     wiring below, not these token VALUES: .app-stepper__btn--active now
+     renders the darkblue--15 family (was Selected's) and
+     .app-stepper__btn--selected now renders the blue-00/-03/-75 family (was
+     Active's) — see components.css for the actual rule swap. The token
+     NAMES below stay tied to their ORIGINAL Figma color-role ("active" =
+     the blue-00 family, "selected" = the darkblue family), exactly as
+     before — only which CSS class consumes which token changed, per your
+     explicit instruction not to invent new token names for this. Practical
+     effect on contrast: darkblue--15 (15.01:1) is now consumed by whichever
+     class needs a SAFE label color without any substitute at all, while the
+     blue-00 family (3.06:1, unsafe as text) is now consumed by the OTHER
+     class, which is why the safe-text substitute below moved from
+     "--stepper-color-text-active-safe" to the state-agnostic
+     "--stepper-color-text-on-brand-safe" — it now backs
+     .app-stepper__btn--selected's label, not Active's, and a rename avoids a
+     token whose name says "active" while a Selected element reads it.
+     Disabled is exempt from all of this (CLAUDE.md §6 disabled-control
+     exemption, same as --btn-pri-color-text-disabled). */
+
+  --stepper-color-bg-disabled: var(--color-lightgray-e7);   /* stepper_Disable_bg */
+  --stepper-color-icon-disabled: var(--color-black-00-50);  /* stepper_Disable_txt_icon, 50% */
+  --stepper-color-text-disabled: var(--color-black-00-50);  /* same source token — covers icon AND label, confirmed by name ("txt_icon"), not coincidental */
+
+  /* Named "selected" for its original Figma color-role (stepper_Selected_txt_bg,
+     darkblue--15) — as of this pass, consumed by .app-stepper__btn--ACTIVE in
+     components.css, not --selected. See the REVERSED note above. */
+  --stepper-color-bg-selected: var(--color-darkblue--15);   /* stepper_Selected_txt_bg — name-corrected, see note above */
+  --stepper-color-icon-selected: var(--color-white-ff);     /* stepper_Selected_icon — name-corrected, see note above */
+  --stepper-color-text-selected: var(--stepper-color-bg-selected); /* "_txt_bg" alias, see note above — 15.01:1 vs white, safe with no substitute needed */
+
+  --stepper-color-bg-pass: var(--color-gray-39);             /* stepper_Pass_txt_bg */
+  --stepper-color-icon-pass: var(--color-white-ff);          /* stepper_Pass_icon — name-corrected */
+  --stepper-color-text-pass: var(--stepper-color-bg-pass);   /* "_txt_bg" alias */
+  --stepper-color-bg-pass-hover: var(--color-blue-1f);       /* stepper_Pass_hover_txt_bg 2 — NOT new, see note above */
+  --stepper-color-bg-pass-active: var(--color-gray-39-50);   /* stepper_Pass_onClick_txt_bg — NOT new, see note above */
+
+  /* Named "active" for its original Figma color-role (stepper_Active_txt_bg,
+     the blue-00/-03/-75 3-variant family) — as of this pass, consumed by
+     .app-stepper__btn--SELECTED in components.css, not --active. See the
+     REVERSED note above. */
+  --stepper-color-bg-active: var(--color-blue-00);           /* stepper_Active_txt_bg — icon-circle background ONLY, unchanged from Figma */
+  --stepper-color-icon-active: var(--color-white-ff);        /* stepper_Active_icon — name-corrected */
+  /* NOT the "_txt_bg" alias used by every other state — see the contrast
+     writeup above. --color-blue-00 measures 3.06:1 vs white at this
+     label's real 16px/regular size, which fails WCAG AA 4.5:1 (the 3:1
+     large-text exception doesn't apply below 24px/regular). Intentional,
+     ongoing deviation from the literal Figma value for THIS text role
+     only — do not revert to var(--stepper-color-bg-active) to "match
+     Figma". RENAMED from --stepper-color-text-active-safe: state-agnostic
+     now because the CSS class that needs it changed (see REVERSED note
+     above) — tied to the blue-00 COLOR family needing a safe substitute,
+     not to whichever state happens to render that family this week. */
+  --stepper-color-text-on-brand-safe: var(--color-blue-1f);  /* 5.63:1 vs white — passes, same blue family as --color-blue-00 */
+  --stepper-color-bg-active-hover: var(--color-blue-03);     /* stepper_Active_hover_txt_bg — already exists, same hover blue as AppButton */
+  --stepper-color-bg-active-active: var(--color-blue-75);    /* stepper_Active_onClick_txt_bg — already exists, same pressed blue as AppButton */
+
+  /* NOT part of the original token list — added after finding a horizontal
+     line connecting consecutive step icons in the REAL Screen B usage
+     (TaskTwo_from_figma_design.png), absent from the isolated "Stepper btn"
+     component sheet (which only shows the button variants, no page
+     composition). Reuses the existing dark Pass color rather than
+     introducing a new hex, since that's the color the connector line
+     pixel-scanned as in the reference — flag if a dedicated connector token
+     surfaces in Figma later.
+
+     CORRECTED — the original pixel-scan above only sampled ONE gap (between
+     two Pass steps) and wrongly generalized that single sample to the whole
+     line. Re-scanned EVERY gap this pass (all 5, y=237, the connector's real
+     row — not y=220, which is mid-icon and mostly background): 4 of 5 read
+     exactly --color-gray-39 (57,83,96), but the gap leading into the
+     Disabled step (بين "مخططات التصحيح" و"ملخص الاختبار") reads (220,220,220)
+     — --color-lightgray-dc, already an existing Variable in this file, not a
+     new hex — 133/239 sampled px, the rest being anti-aliased background
+     bleed from the thin 2px line. The connector is genuinely two-color, not
+     one: dark for a segment leading into Pass/Active/Selected, light for one
+     leading into Disabled (AppStepper.razor now renders N-1 independent
+     segments instead of one spanning line, see that file). */
+  --stepper-color-connector: var(--color-gray-39);
+  --stepper-color-connector-disabled: var(--color-lightgray-dc);
+
+  --stepper-disabled-opacity: var(--a11y-disabled-opacity); /* same double-signal (color + opacity) as --btn-pri-disabled-opacity/--field-disabled-opacity */
+
+
+  /* ------------------------------------------------------------------------
+     TYPOGRAPHY (font family / size / weight)
+     Variables: --font-family-*, --font-size-*, --font-weight-*
+     Tokens:    --{component}-font-{property}
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  --font-family-cairo: 'Cairo', sans-serif;
+
+  --font-weight-light: 300;
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+  --font-weight-extrabold: 800;
+  --font-weight-black: 900;
+
+  /* 8pt scale: --font-size-8pt-{n} = n * 8px */
+  --font-size-8pt-1: 8px;
+  --font-size-8pt-2: 16px;
+  --font-size-8pt-3: 24px;
+  --font-size-8pt-4: 32px;
+  --font-size-8pt-5: 40px;
+  --font-size-8pt-6: 48px;
+  --font-size-8pt-7: 56px;
+  --font-size-8pt-8: 64px;
+  --font-size-8pt-9: 72px;
+  --font-size-8pt-10: 80px;
+  --font-size-8pt-11: 88px;
+  /* off-scale size used for sidebar nested/child items */
+  --font-size-regular-14: 14px;
+  --font-size-regular-18: 18px;
+  --font-size-regular-12: 12px;
+
+  /* Tokens */
+  /* Sidebar */
+  --sidebar-font-family: var(--font-family-cairo);
+  --sidebar-font-size: var(--font-size-8pt-2);            /* 16px, top-level */
+  --sidebar-font-size-child: var(--font-size-regular-14); /* 14px, nested */
+  --sidebar-font-weight-regular: var(--font-weight-regular);
+  --sidebar-font-weight-active: var(--font-weight-medium);
+
+  /* Field (AppField) — reuses existing font Variables, no new ones needed.
+     No --field-font-size-label token: MudBlazor's own label
+     shrink/grow animation (.mud-input-label-shrink) already handles label
+     sizing internally; overriding it would mean re-implementing part of the
+     component, which CLAUDE.md §7/rule 7 rules out. Only color is themed. */
+  --field-font-family: var(--font-family-cairo);
+  --field-font-size-text: var(--font-size-8pt-2);              /* 16px, input value text */
+  --field-font-weight-label: var(--font-weight-regular);
+  --field-font-weight-label-active: var(--font-weight-medium); /* Enabled (filled) label */
+
+  /* Button (AppButton) */
+  --btn-pri-font-weight: var(--font-weight-regular);
+  /* 16px — your instruction said reuse var(--sidebar-font-size) directly;
+     routed to the raw Variable it already resolves to (--font-size-8pt-2)
+     instead, so this token doesn't depend on another component's semantic
+     alias — the two-layer convention (CLAUDE.md §4) has Tokens reference
+     Variables, not other Tokens, and --sidebar-font-size could change for
+     sidebar-specific reasons someday without that meaning anything for
+     buttons. Same 16px value either way.
+     RE-CHECKED (recalibration pass): the banner AppButtons' rendered height
+     (44px, driven by --a11y-touch-target-min in components.css, not by this
+     font-size token) measures within ~1px of the reference button height
+     (~43px, canvas pixel-scan of TaskOne_from_figma_design.png at 1920px
+     width). Left UNCHANGED — font-size/padding were not the source of any
+     size mismatch here. */
+  --btn-pri-font-size: var(--font-size-regular-12);
+
+  /* AppStatusCard — sources from existing font Variables, no new ones.
+     --status-card-font-size-title: VISUALLY RECALIBRATED, NOT A TRACED FIGMA
+     NUMBER (flagged per instruction — no exact spec value confirmed yet).
+     Measured directly against demo/ScreenA/TaskOne_from_figma_design.png at
+     its native 1920px width: the Latin "CBT" glyphs in a card title measure
+     a 16px cap-height (canvas pixel-scanned bounding box, not eyeballed).
+     Cap-height is typically ~65-70% of font-size for a sans-serif face, so
+     16px cap-height implies a font-size around 23-24px — this app's own
+     rendered title at the OLD 16px font-size measured an ~11px cap-height
+     at the identical 1920px viewport width (same measurement method, same
+     canvas width, directly comparable), confirming the old value read
+     visibly smaller than the reference rather than matching it. Bumped a
+     full step up the existing 8pt scale (16px -> 24px) rather than an
+     off-scale number, since 24px is the closest scale step to the ~23-24px
+     implied by the measured ratio.
+     --status-card-font-size-meta: UNCHANGED — no reference measurement taken
+     for meta-row text specifically this pass (only title/badge/ring/button/
+     panel-padding were checked, per instruction); still the prior visual
+     estimate, not confirmed either way. */
+  --status-card-font-family: var(--font-family-cairo);
+  --status-card-font-size-title: var(--font-size-8pt-2);       /* 24px — recalibrated from 16px, see note above */
+  --status-card-font-weight-title: var(--font-weight-medium);
+  --status-card-font-size-meta: var(--font-size-regular-14);   /* 14px — unchanged, still an estimate */
+  --status-card-font-weight-status-label: var(--font-weight-medium);
+
+  /* Stepper (AppStepper) — per instruction: Stepper_btn = Typo/Font
+     Weight/Regular + Typo/Font Size/8b Systm/2 (16px), same scale already
+     used by sidebar/buttons — reuses the existing raw Variables directly,
+     no new ones. */
+  --stepper-font-family: var(--font-family-cairo);
+  --stepper-font-size: var(--font-size-8pt-2);   /* 16px */
+  --stepper-font-weight: var(--font-weight-regular);
+
+  /* Panel header title (.app-panel-header__title) — Screen B's "بيانات
+     النموذج" section title. Font-size: pixel-measured bounding box of the
+     rendered title glyphs on TaskTwo_from_figma_design.png (x=1400-1590,
+     y=397-427) = 30px tall including Arabic ascender/descender extent, which
+     runs taller than Latin cap-height at the same font-size — closest 8pt-
+     scale step is --font-size-8pt-3 (24px). Deliberately NOT
+     --font-size-8pt-2: --status-card-font-size-title above sources that
+     Variable (16px) despite its own comment claiming "24px" — a pre-existing
+     mismatch in this file, not fixed here (out of scope for this pass,
+     flagged so it isn't mistaken for this new token's source). Weight: no
+     reliable measurement off a raster screenshot; following
+     AppStatusCard/AppAlert's existing precedent of --font-weight-medium for
+     a component title rather than a traced Figma value. */
+  --panel-font-family: var(--font-family-cairo);
+  --panel-font-size-title: var(--font-size-8pt-3); /* 24px */
+  --panel-font-weight-title: var(--font-weight-medium);
+  /* Plain in-panel text (.app-panel-text) — "لقد اخترت:" / "عدد الاقسام: 2".
+     Visually smaller than the 24px section titles above, matching body/
+     input text elsewhere in this file (--field-font-size-text is the same
+     --font-size-8pt-2 value) — reused as a sibling here rather than chained
+     through Field's token. */
+  --panel-font-size-body: var(--font-size-8pt-2); /* 16px */
+  --panel-font-weight-body: var(--font-weight-regular);
+
+  /* Toggle group (AppToggleGroup) — renders as real <button> elements (see
+     that component's header comment), so it reuses AppButton's own
+     typography Variables directly as sibling values, not by chaining
+     through --btn-pri-font-*: same font-family/size/weight, text-transform
+     none — the segmented-button look this control is going for. */
+  --toggle-font-family: var(--font-family-cairo);
+  --toggle-font-size: var(--font-size-regular-12);
+  --toggle-font-weight: var(--font-weight-regular);
+
+  /* Chip (AppChip) — no exact cap-height measurement taken (a small static
+     pill tag, low risk if off by a step); --font-size-regular-14 chosen as
+     the closest existing scale step to the visual proportion against the
+     adjacent "لقد اخترت:" body text, same reasoning tier as
+     --alert-font-size's own "visual estimate" note above. */
+  --chip-font-family: var(--font-family-cairo);
+  --chip-font-size: var(--font-size-regular-14);
+  --chip-font-weight: var(--font-weight-regular);
+
+  /* Tag (.app-tag) — smaller/denser than Chip, matching the compact pills
+     on the question-bank cards (visual estimate against the source JPEG's
+     limited resolution, same reasoning tier as --chip-font-size above). */
+  --tag-font-family: var(--font-family-cairo);
+  --tag-font-size: var(--font-size-regular-12);
+  --tag-font-weight: var(--font-weight-medium);
+
+  /* Question card (AppQuestionCard) — question text. Visual estimate,
+     matching the other small-text roles already on this 12/14px tier. */
+  --qcard-font-family: var(--font-family-cairo);
+  --qcard-font-size: var(--font-size-regular-14);
+  --qcard-font-weight: var(--font-weight-regular);
+
+  /* Question-bank column header (.app-qbank-column__title /
+     __subtitle) — title matches the same body-text size already used for
+     "لقد اخترت:" (--panel-font-size-body); the "٠ السؤال/الأسئلة" count
+     line under it is visually smaller, closest step --font-size-regular-12. */
+  --qbank-font-family: var(--font-family-cairo);
+  --qbank-font-size-title: var(--font-size-8pt-2); /* 16px — sibling of --panel-font-size-body, not chained through it */
+  --qbank-font-weight-title: var(--font-weight-medium);
+  --qbank-font-size-subtitle: var(--font-size-regular-12);
+  --qbank-font-weight-subtitle: var(--font-weight-regular);
+
+
+  /* ------------------------------------------------------------------------
+     SPACING
+     Variables: --space-{step} (e.g. --space-4)
+     Tokens:    --{component}-space-{role} (e.g. --card-space-padding)
+     ------------------------------------------------------------------------ */
+
+  /* Variables — from Figma "Numbers" variable collection */
+  --space-2: 2px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+
+  /* Tokens */
+  /* Sidebar
+     NOTE: --sidebar-width has no backing raw Variable (not part of the
+     Figma Numbers scale) — flagged per CLAUDE.md §4, revisit if/when a
+     width scale is supplied. The rest now source from --space-* above. */
+  --sidebar-width: 260px;
+  --sidebar-padding-block: var(--space-24);
+  --sidebar-padding-inline: var(--space-16);
+  --sidebar-item-padding: var(--space-8);
+  --sidebar-item-gap: var(--space-8);
+
+  /* Header (AppHeader) — sources from --space-* above. */
+  --header-padding-block: var(--space-8);
+  --header-padding-inline: var(--space-24);
+  --header-item-gap: var(--space-16);
+
+  /* Field (AppField) — same two-layer deviation as Sidebar/Header above (no
+     --space-* scale supplied yet). Only the error-icon-to-text gap needs its
+     own value; field padding/min-height are covered by MudBlazor's own
+     Margin param and --a11y-touch-target-min below, not duplicated here
+     (CLAUDE.md §5 one-source-of-truth). */
+  --field-space-error-gap: 4px;
+
+  /* AppStatusCard — sources from the existing --space-* scale for every gap
+     that scale actually covers.
+     --status-card-badge-size: VISUALLY RECALIBRATED, NOT A TRACED FIGMA
+     NUMBER (flagged per instruction). Measured directly against
+     demo/ScreenA/TaskOne_from_figma_design.png at 1920px width via canvas
+     pixel-scanning (not eyeballed): the dark-navy icon-badge circle on the
+     "CBT" card has an exact 55x55px bounding box (clean circular fill,
+     unambiguous edges). This app's own badge at the OLD 32px value,
+     measured the same way at the same 1920px viewport width, is visibly
+     smaller than the reference rather than matching it — confirmed by
+     direct pixel measurement, not assumed. Set to 56px (closest round
+     number to the measured 55px) rather than 55px itself, since 56px also
+     matches this card's own ring diameter (MudProgressCircular Size.Large,
+     unchanged — see below), giving the badge and ring equal visual weight,
+     which the reference appears to do too. Still NO backing --space-* step
+     (8/12/16/24 — none are anywhere close), same documented deviation as
+     before, just a different flagged placeholder value now.
+     --status-card-space-header-gap / -divider-margin / -body-gap /
+     -meta-gap: UNCHANGED. Measured the divider line and content-start
+     positions in the reference (dividerY=486, header content bottom=469,
+     body content start=504) — both gaps come out to ~17-18px, close enough
+     to the existing 16px (--space-16) that pixel-scan noise/anti-aliasing
+     could account for the difference; no confident case to change these
+     off a single reference card. If the recalibrated badge/title above
+     don't fully close the "reads loose" gap once compared side by side,
+     these are the next values to revisit. */
+  --status-card-badge-size: 56px;
+  --status-card-space-header-gap: var(--space-8);
+  --status-card-space-divider-margin: var(--space-16);
+  --status-card-space-body-gap: var(--space-16);
+  --status-card-space-meta-gap: var(--space-8);
+
+  /* Panel (.app-panel) — sources from the existing --space-* scale, no new
+     raw Variable needed. --space-16 matches the visual gap between the
+     panel's border and its content read off the Screen A screenshot most
+     closely of the available scale steps (8/12/16/24) — not a value handed
+     down from Figma directly, flag if a spec value surfaces later.
+     RE-CHECKED (this recalibration pass): pixel-measured against
+     TaskOne_from_figma_design.png at 1920px width — the panel's left border
+     to its first button's left edge is ~16px, matching this token almost
+     exactly. Left UNCHANGED; still not a traced Figma number, just now a
+     measured-consistent one rather than a pure visual guess. */
+  --panel-space-padding: var(--space-16);
+  --panel-space-gap: var(--space-16);
+
+  /* Toggle group (AppToggleGroup) — sources from the existing --space-*
+     scale, no new raw Variable. --toggle-space-item-gap is the gap between
+     an item's own icon and label (visual estimate against AppButton's own
+     icon/label spacing, not separately pixel-measured for this component). */
+  --toggle-space-item-padding-inline: var(--space-16);
+  --toggle-space-item-padding-block: var(--space-12);
+  --toggle-space-item-gap: var(--space-8);
+
+  /* Chip (AppChip) — pixel-measured against the "نموذج 1" chip on
+     TaskTwo_from_figma_design.png (CLAUDE.md rule 1): outer box
+     x=1313-1437/y=736-775 (124x39), inner content x=1331-1414/y=747-766.
+     Inline padding measures ~18-23px (closest scale step: --space-16, same
+     value --alert-space-padding-inline already uses for AppAlert's own
+     pill — a shared design-system convention for pill-shaped tags, not a
+     coincidence, but still re-derived as a sibling token per this file's
+     own "Tokens reference Variables, not other Tokens" rule). Block padding
+     measures ~9-11px (closest step: --space-8, same value
+     --alert-space-padding-block uses). */
+  --chip-space-padding-inline: var(--space-16);
+  --chip-space-padding-block: var(--space-8);
+  --chip-space-gap: var(--space-8);
+
+  /* Tag (.app-tag) — tighter than Chip's padding on purpose (visual
+     estimate against the source JPEG): these are small dense pills, not a
+     content-sized label like Chip. */
+  --tag-space-padding-inline: var(--space-8);
+  --tag-space-padding-block: var(--space-2);
+
+  /* Question card (AppQuestionCard) — visual estimate (source JPEG has
+     limited resolution to pixel-measure precisely). --qcard-space-gap
+     covers every gap between the row's own icon/text/tag children. */
+  --qcard-space-padding: var(--space-12);
+  --qcard-space-gap: var(--space-8);
+  --qcard-space-tag-gap: var(--space-8); /* vertical gap between the 2 stacked tags */
+
+  /* Question-bank columns (.app-qbank-column) — 3-column grid under
+     "مجمع بنوك العناصر", same --panel-space-gap/-padding tokens the rest
+     of this merged panel already uses (one source of truth, not a new
+     spacing scale for one more grid). --qbank-empty-min-height is a visual
+     placeholder height (roughly matches the visible card-list column's
+     height in the reference) — not pixel-traced, flag if a real spec
+     height surfaces. The dashed border's own width isn't a new token —
+     components.css reuses the existing --field-stroke-width Variable
+     directly, same as every other border in this file, rather than a
+     second hardcoded 1px. */
+  --qbank-columns-gap: var(--panel-space-gap);
+  --qbank-column-space-padding: var(--panel-space-padding);
+  --qbank-column-space-header-gap: var(--space-8);
+  --qbank-empty-min-height: 280px;
+
+  /* Stepper (AppStepper) — icon-circle diameter. REAL MEASUREMENT, not a
+     visual estimate: your original instruction asked for a smaller mobile
+     size "if a mobile-specific frame/variant exists," confirmed against
+     Figma. One does exist — demo/ScreenB/TaskTwo_Mobile.png, the actual
+     mobile export of the exact screen that uses this stepper — so this was
+     checked directly rather than guessed either way. Pixel-scanned (custom
+     PNG decoder, exact color-match bounding box, not eyeballed) each step
+     icon's own fill color (blue-00/gray-39/darkblue--15/lightgray-e7) in
+     both the 1920px desktop reference and the 430px mobile reference:
+     every icon circle measures a clean 40x40px bounding box in BOTH files,
+     with no size difference between them. So: ONE size, no mobile
+     reduction — the finding contradicts the original "smaller on mobile"
+     assumption, which is why this token has no responsive override anywhere
+     (mobile only drops the label text, see responsive-rtl.css). Still no
+     backing --space-* step (8/12/16/24/40 isn't on that scale), same
+     documented deviation as --status-card-badge-size above. */
+  --stepper-icon-size: 40px;
+
+  /* Shared accessibility constant (CLAUDE.md §6: touch targets >= 44x44 CSS
+     px). Not component-specific on purpose — every future interactive
+     component needs the same minimum. */
+  --a11y-touch-target-min: 44px;
+
+  /* Shared accessibility constant — disabled-state opacity (CLAUDE.md §6:
+     never signal disabled by color alone; this pairs with cursor:not-allowed
+     in each component's CSS). Same reasoning as --a11y-touch-target-min
+     above: every disabled interactive component needs the same value, so
+     it lives once here instead of once per component. --field-disabled-
+     opacity and --btn-pri-disabled-opacity both alias this. */
+  --a11y-disabled-opacity: 0.5;
+
+
+  /* ------------------------------------------------------------------------
+     RADIUS
+     Variables: --radius-{step}
+     Tokens:    --{component}-radius-{role}
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  /* PLACEHOLDER — no radius scale has come from Figma yet for any component
+     other than Sidebar (0px) and Header's pill (999px, both special-cased
+     below, not part of a scale). --radius-8 is a reasonable stand-in read
+     off the Screen A filter-panel screenshot (corner curvature roughly
+     matches an 8px radius at the screenshot's scale), NOT a token traced to
+     an actual Figma radius value/variable — flag and replace if Figma later
+     supplies an exact number. */
+  --radius-8: 8px;
+  /* PLACEHOLDER, same status as --radius-8 above — promoted from a literal
+     999px that was previously hardcoded directly on --header-radius-pill
+     (CLAUDE.md §5, one source of truth: noticed while adding AppAlert's own
+     pill radius below, which needs the identical fully-rounded shape —
+     both tokens now reference this one Variable instead of each spelling
+     out 999px separately). */
+  --radius-pill: 999px;
+
+  /* Tokens */
+  /* Sidebar — same two-layer deviation noted under SPACING above. */
+  --sidebar-radius: 0px;
+
+  /* Panel (.app-panel — shared bordered/rounded container, CLAUDE.md §3.1,
+     components.css). Used for Screen A's filter row and the two sync-action
+     cells beneath it (same bordered/rounded look in both places per the
+     Figma screenshot) — a shared token trio, not one borrowed from Sidebar.
+     --panel-color-stroke intentionally re-derives the SAME raw value
+     --sidebar-color-stroke already points at (--color-lightgray-de) rather
+     than writing `var(--sidebar-color-stroke)`: tokens.css's own convention
+     elsewhere (see --btn-pri-font-size's comment) is Tokens reference
+     Variables, not other Tokens, so Panel doesn't silently start depending
+     on Sidebar's token for reasons that have nothing to do with panels.
+     Flagging per CLAUDE.md §5/§4 rather than picking silently. */
+  --panel-color-bg: var(--color-white-ff);
+  --panel-color-stroke: var(--color-lightgray-de);
+  --panel-radius: var(--radius-8);
+
+  /* Field (AppField) — deliberately NO --field-radius token. MudBlazor's
+     outlined variant already ships its own corner radius via
+     --mud-default-borderradius; overriding it would be inventing a value
+     with even less grounding than a placeholder color. Left as MudBlazor's
+     default until Figma specifies a --radius-* scale to source it from. */
+
+  /* Header (AppHeader) — pill shape for the "المزامنة" sync button. */
+  --header-radius-pill: var(--radius-pill);
+
+  /* Toggle group (AppToggleGroup) — fully-rounded pill shape, confirmed
+     against the reference's rounded ends. Shared --radius-pill, not a
+     second hardcoded 999px. */
+  --toggle-radius: var(--radius-pill);
+
+  /* Chip (AppChip) — same fully-rounded pill shape as AppAlert's own. */
+  --chip-radius: var(--radius-pill);
+
+  /* Tag (.app-tag) — same fully-rounded pill shape, smaller pills. */
+  --tag-radius: var(--radius-pill);
+
+
+  /* ------------------------------------------------------------------------
+     ELEVATION (box-shadow scale)
+     Variables: --elevation-{step}
+     Tokens:    --{component}-elevation-{role}
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  /* TODO */
+
+  /* Tokens */
+  /* TODO */
+
+
+  /* ------------------------------------------------------------------------
+     BORDERS
+     Variables: --border-width-{step}, --border-color-{role}
+     Tokens:    --{component}-border-{property}
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  --border-width-2: 2px;
+
+  /* Tokens */
+  /* Field (AppField<T>) — uniform stroke width across every state
+     (Default/Hover/Focused/Selected/FillOut/Disabled/Error), per explicit
+     instruction. Named --field-stroke-width, not --field-border-width, to
+     match this component's own already-established "stroke" naming
+     (--field-color-stroke-default/-hover/-error/etc. above) rather than the
+     generic --{component}-border-{property} pattern this section header
+     documents — the Field family consistently uses "stroke" throughout,
+     Figma's own term, so this stays consistent with itself over the
+     placeholder pattern.
+
+     FLAGGED, not silently overridden: MudBlazor's own outlined variant is
+     NOT uniform by default — confirmed by reading the shipped CSS,
+     border-width:1px at rest, bumped to border-width:2px only on
+     :focus-within (a deliberate Material Design convention: thin normally,
+     thicker to signal focus). Applying 2px uniformly, as instructed, means
+     focus no longer reads as visually thicker than the other states — the
+     focus/error/content-state distinctions now rely entirely on
+     border-COLOR (already themed per state) rather than color+thickness
+     together. No Figma data suggests any one state should differ, so all
+     seven use the same value below; revisit only if a mockup later shows a
+     state with a different stroke width. */
+  --field-stroke-width: var(--border-width-2);
+
+  /* Stepper (AppStepper) — connector line thickness. Pixel-scanned the
+     connector line in demo/ScreenB/TaskTwo_from_figma_design.png at ~2px
+     tall, which already matches the existing --border-width-2 Variable
+     exactly — reused rather than adding a second identically-valued
+     Variable (CLAUDE.md §5). */
+  --stepper-connector-width: var(--border-width-2);
+
+  /* Gap between adjacent connector segments (components.css's
+     .app-stepper__connector-segment) — NOT a Figma-measured value, added
+     per your explicit instruction so the N-1 segments read as visually
+     distinct pieces instead of one continuous bar. References the existing
+     --space-16 spacing primitive rather than a bare "16px" (CLAUDE.md §4 —
+     go through a token, never a raw number, even for a value that isn't
+     itself color/typography). Each segment insets by half of this (8px)
+     from BOTH ends, so the full 16px disappears as empty space between
+     every adjacent pair — see components.css for the calc(). */
+  --stepper-connector-gap: var(--space-24);
+
+
+  /* ------------------------------------------------------------------------
+     FOCUS RING
+     Variables: --focus-ring-width, --focus-ring-color, --focus-ring-offset
+     Tokens:    --{component}-focus-ring-{property}
+     Required: visible on every interactive element (CLAUDE.md §6) — never
+     just outline: none.
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+  /* Reuses the existing --color-blue-00 variable — no new hex introduced. */
+  --focus-ring-color: var(--color-blue-00);
+
+  /* Tokens */
+  /* Shared, not component-prefixed on purpose (see comment above the
+     ACCESSIBILITY note under SPACING): every interactive element in every
+     future component needs the identical ring, so a --{component}-focus-ring-*
+     alias per component would just be repeating the same value. */
+
+
+  /* ------------------------------------------------------------------------
+     BREAKPOINTS
+     Variables: --breakpoint-{step} (documented here for reference; actual
+     media query values must be literal since custom properties cannot be
+     used inside @media conditions)
+
+     NOTE: These breakpoint values are documentation-only — CSS custom
+     properties cannot be used inside @media conditions. The literal px
+     values below MUST be kept in sync manually with:
+     1. The @media queries in responsive-rtl.css
+     2. MudBlazor's Breakpoint enum usage in AppTheme.cs / components
+     If you change a value here, grep the project for the old px number
+     and update every match.
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  --breakpoint-sm: 600px;   /* MudBlazor Breakpoint.Sm — header sync-button label collapses below this */
+  --breakpoint-md: 960px;   /* MudBlazor Breakpoint.Md — MudDrawer's Breakpoint param + main's margin-inline-start */
+  --breakpoint-lg: 1280px;  /* MudBlazor Breakpoint.Lg */
+  --breakpoint-xl: 1920px;  /* MudBlazor Breakpoint.Xl */
+
+
+  /* ------------------------------------------------------------------------
+     MOTION
+     Variables: --motion-duration-{step}, --motion-easing-{name}
+     Tokens:    --{component}-motion-{property}
+     Required: must respect prefers-reduced-motion (CLAUDE.md §6).
+     ------------------------------------------------------------------------ */
+
+  /* Variables */
+  /* TODO */
+
+  /* Tokens */
+  /* TODO */
+
+}

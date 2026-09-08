@@ -1,0 +1,70 @@
+@* ActionBannerStatesGallery.razor — TEMPORARY states gallery for comparing
+   AppActionBanner against the Figma "btn_box" component's 3 stacked states.
+   Not part of Screen A/B; safe to delete once the comparison is done. Uses
+   only the shared AppActionBanner + shared tokens/CSS — no page-specific
+   component styling added, per CLAUDE.md §3 (the <style> block below is
+   layout-only, arranging the gallery cells themselves, same convention as
+   demo/ButtonStatesGallery.razor).
+
+   CORRECTED — this component's 3rd state is onClick/pressed, not Disabled
+   (see AppActionBanner.razor's own header comment): there is no Disabled
+   parameter/cell any more. All 3 cells use AppActionBanner's real CSS (no
+   fake swatches) — move your mouse over the Hover cell for its real :hover
+   color; "onClick" is a genuine, transient :active state (same as
+   AppButton's own), which only paints while the mouse/key is actually held
+   down, so click and hold on that cell to see the real
+   --btn-pri-color-bg-active color live. *@
+@page "/demo/action-banner-states"
+
+<PageTitle>AppActionBanner — states gallery</PageTitle>
+
+<h1>AppActionBanner — states gallery (Figma "btn_box")</h1>
+<p>
+    3 states from the Figma component: <strong>Default</strong>,
+    <strong>Hover</strong> (move your mouse over it), and
+    <strong>onClick</strong> (press and hold the mouse/key to see the real
+    <code>:active</code> color — it won't show in a static screenshot).
+    Each renders through AppActionBanner's real CSS/code path — the badge
+    and pill button share one synchronized color per state.
+</p>
+
+<div class="action-banner-states-grid">
+    <div class="action-banner-states-cell">
+        <h2>Default</h2>
+        <AppActionBanner Title="مزامنة يدوية لجميع المراكز"
+                          Description="وصف المزامنة اليدوية"
+                          ButtonLabel="بدء المزامنة اليدوية" />
+    </div>
+
+    <div class="action-banner-states-cell">
+        <h2>Hover (move mouse over it)</h2>
+        <AppActionBanner Title="مزامنة يدوية لجميع المراكز"
+                          Description="وصف المزامنة اليدوية"
+                          ButtonLabel="بدء المزامنة اليدوية" />
+    </div>
+
+    <div class="action-banner-states-cell">
+        <h2>onClick (press &amp; hold)</h2>
+        <AppActionBanner Title="مزامنة يدوية لجميع المراكز"
+                          Description="وصف المزامنة اليدوية"
+                          ButtonLabel="بدء المزامنة اليدوية" />
+    </div>
+</div>
+
+<style>
+    /* Page-local layout only (stacked arrangement of the gallery itself) —
+       not a reusable visual pattern, so it's fine here rather than
+       components.css per CLAUDE.md §3.1's rule of thumb. Nothing here sets
+       a color/size that AppActionBanner itself needs. */
+    .action-banner-states-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        max-width: 700px;
+    }
+
+    .action-banner-states-cell h2 {
+        font-size: 14px;
+        margin: 0 0 8px;
+    }
+</style>

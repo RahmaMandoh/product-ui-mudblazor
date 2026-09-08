@@ -1,0 +1,27 @@
+@* AppChip.razor — shared static pill-shaped tag (CLAUDE.md §3.1), Screen B's
+   "نموذج 1" tag next to "لقد اخترت:". Confirmed against
+   TaskTwo_from_figma_design.png that this is a purely static label — no
+   click/remove affordance anywhere in the reference — so it renders as a
+   plain non-interactive <span>, no button/role/focus-ring/touch-target
+   machinery (CLAUDE.md §6's interactive-element rules don't apply to a
+   non-interactive element; adding them would be interactivity the design
+   doesn't have). DOM order (text, then icon) matches the confirmed
+   right-to-left reading of the reference under the app's ambient
+   dir="rtl" — same "plain DOM order" convention as every other component
+   in this library. *@
+<span class="app-chip">
+    <span class="app-chip__label">@Text</span>
+    @if (!string.IsNullOrEmpty(Icon))
+    {
+        <MudIcon Icon="@Icon" Color="Color.Inherit" Class="app-chip__icon" aria-hidden="true" />
+    }
+</span>
+
+@code {
+    [Parameter, EditorRequired] public string Text { get; set; } = string.Empty;
+
+    /// Optional leading-in-reading-order (End-position, i.e. rendered after
+    /// the text under RTL) icon. Null renders no icon and reserves no gap —
+    /// same convention as AppButton's own optional Icon.
+    [Parameter] public string? Icon { get; set; }
+}

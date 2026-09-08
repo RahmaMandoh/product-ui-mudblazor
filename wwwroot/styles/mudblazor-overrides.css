@@ -1,0 +1,433 @@
+/* mudblazor-overrides.css — the ONLY place MudBlazor's own classes are
+   targeted. Every selector reaching into MudBlazor internals needs a
+   one-line comment saying which MudBlazor version/component it targets
+   (CLAUDE.md §5), since those class names are not a stable public API.
+
+   All facts below (which class sits on which element, which rules already
+   carry !important) were read directly from the shipped
+   _content/MudBlazor/MudBlazor.min.css in the installed 8.7.0 NuGet
+   package (MudBlazor ships compiled — no .razor source to read) — per
+   CLAUDE.md rule 1's first bullet. NOT yet confirmed by a DevTools Elements
+   screenshot (rule 1's second bullet) — flagged per section below. */
+
+/* ==========================================================================
+   Field (AppField) — scoped under .app-field-input, the Class we pass to
+   whichever control AppField<T> renders (MudTextField<T>, MudAutocomplete<T>,
+   or MudDatePicker) in Components/AppField.razor. Targets MudBlazor 8.7.0
+   MudTextField<T>/MudInputControl, Variant.Outlined.
+
+   DOM STRUCTURE — CONFIRMED via an actual running instance (dotnet run +
+   headless Chromium, outerHTML read directly), not read from docs/memory.
+   This supersedes every earlier "not yet DevTools-verified" flag in this
+   file for the facts listed below.
+
+   Text (MudTextField<T>) and Select (MudAutocomplete<T>) share IDENTICAL
+   structure:
+     <div class="mud-input-control ... app-field-input app-field-input--text">  <-- Class lands HERE, confirmed
+       <div class="mud-input-control-input-container">
+         <div class="mud-input mud-input-outlined ... [mud-shrink] [mud-disabled] [mud-input-error]">
+           <input class="mud-input-slot ..." />
+           <div class="mud-input-adornment mud-input-adornment-end">
+             <svg class="mud-icon-root mud-svg-icon ...">  <-- or a <button><svg></button> wrapper, see ICON note below
+           </div>
+           <fieldset class="mud-input-outlined-border"><legend>Label</legend></fieldset>
+         </div>
+         <label class="mud-input-label ... mud-input-label-inputcontrol [mud-input-error]">Label</label>  <-- SIBLING of .mud-input, not nested inside it
+       </div>
+     </div>
+   So: .mud-input-outlined-border and .mud-input-adornment ARE descendants
+   of .mud-input (child combinator would also work, but plain descendant
+   selectors below are correct and left as-is); .mud-input-label is a
+   SIBLING at the .mud-input-control-input-container level, which is why
+   every label rule below correctly uses "~" (general sibling), not a
+   descendant space.
+
+   Date (MudDatePicker) is DIFFERENT from the above in one specific way:
+     <div class="mud-picker ... app-field-input app-field-input--date">  <-- Class lands HERE (the OUTER .mud-picker), NOT on the inner .mud-input-control
+       <div class="mud-input-control mud-input-outlined-with-label mud-input-input-control">  <-- this inner .mud-input-control does NOT carry app-field-input
+         <div class="mud-input-control-input-container"> ... same .mud-input/.fieldset/.label structure as above ... </div>
+       </div>
+     </div>
+   Since every selector below is written as ".app-field-input .mud-input..."
+   (descendant, not child), this still matches correctly for Date too — the
+   extra un-classed .mud-input-control wrapper in between doesn't break a
+   descendant selector. Confirmed working live, not just structurally sound
+   on paper.
+
+   ICON COLOR — the one place plain inheritance from .mud-input-adornment
+   does NOT reliably work, confirmed by testing (computed styles didn't
+   match tokens even though the CSS rule existed and matched an ancestor):
+     - The icon is an <svg class="mud-icon-root mud-svg-icon ...">, and
+       MudBlazor's own ".mud-icon-root.mud-svg-icon{fill:currentColor}" is
+       what actually paints it — so normally inheriting `color` down from
+       the .mud-input-adornment div works fine.
+     - EXCEPT MudBlazor's disabled state has its own DIRECT rule targeting
+       the icon element itself: ".mud-disabled .mud-svg-icon,.mud-disabled
+       .mud-icon-root{color:var(--mud-palette-text-disabled)}" (confirmed by
+       reading the shipped MudBlazor.min.css). A directly-matching rule on
+       an element always wins over an inherited value regardless of the
+       inherited rule's specificity — so setting color only on the ancestor
+       .mud-input-adornment was never going to reach the icon in the
+       Disabled state. Fixed below by targeting .mud-icon-root/.mud-svg-icon
+       directly, with enough extra classes to also beat that MudBlazor rule
+       on specificity (belt and suspenders, since ours loads later anyway).
+     - Select's dropdown-arrow icon sits inside a <button> that MudBlazor
+       renders as part of MudAutocomplete's own internals — confirmed
+       MudAutocomplete<T> has NO AdornmentColor parameter at all (unlike
+       MudTextField<T> and MudPicker<T>, both of which do — checked
+       MudBlazor.xml directly), so there was never a C# parameter to set
+       here; its default icon color can only be reached via this same
+       direct-SVG CSS targeting, not a missing Razor attribute.
+
+   ERROR LABEL COLOR — confirmed root cause of a real bug (not a guess):
+   the actual shipped rule is
+     ".mud-input-control>.mud-input-control-input-container>.mud-input-label-inputcontrol.mud-input-error{color:var(--mud-palette-error) !important}"
+   — 4 classes chained with child combinators (specificity 0,4,0), not the
+   2-class rule this file previously assumed. Our old override
+   (".app-field-input .mud-input-label-inputcontrol.mud-input-error", 3
+   classes) was actually LOWER specificity and silently lost the tie even
+   though both are !important — confirmed by computed style showing
+   MudBlazor's plain default red (#F44336) instead of our token on Text and
+   Select (Date was unaffected: MudPicker<T> has no .mud-input-error class
+   at all, so Date only ever used our own .app-field-input--error fallback,
+   which already had enough specificity). Fixed below by compounding
+   .app-field-input onto .mud-input-control for +1 specificity, matching
+   MudBlazor's exact structure so it's guaranteed to win regardless of load
+   order, not just by coincidence of currently loading later.
+
+   State-detection classes confirmed by reading the shipped CSS (not
+   guessed):
+     .mud-shrink   — present on .mud-input when it has a value OR is
+                     focused (MudBlazor doesn't expose "has value" alone as
+                     a separate class). Combined with :not(:focus-within),
+                     ".mud-shrink:not(:focus-within)" isolates true
+                     "has a value, not focused" (Selected/FillOut below)
+                     from "Focused" (which wins regardless of shrink) — this
+                     is how the states stay independent of each other, per
+                     the confirmed row-3/4/5 reading (row 4, "Filled —
+                     Focused", uses Focused's tokens, not Selected/FillOut's).
+     .mud-disabled — sits on the same .mud-input element as .mud-shrink.
+     .mud-input-error — CONFIRMED present on BOTH the outer .mud-input-control
+                     wrapper AND the <label> itself (not just the wrapper, as
+                     previously assumed) — see ERROR LABEL COLOR above.
+                     MudBlazor's own ".mud-input-error .mud-input-outlined-border"
+                     rule already carries !important, so ours must match it to
+                     win (see ERROR section) — this is CLAUDE.md rule 3's
+                     "override the library's own !important" case, not a
+                     blind specificity guess.
+
+   STATE MODEL, rebuilt around real Figma data (was: 8 combined
+   default/enabled x resting/hover/disabled-* states, invented as
+   placeholders before any real values existed):
+     Default   — empty, resting
+     Hover     — empty, hovered (Figma gives ONE hover look, not split by
+                 content — unlike the old placeholder model — so there is no
+                 "filled + hover" rule; Figma's 7 confirmed rows never show
+                 one, and nothing here invents it)
+     Disabled  — ONE disabled look regardless of value present (also
+                 simplified from the old model, which wrongly split
+                 disabled-empty vs disabled-filled)
+     Focused   — shared by all three Types, wins over Selected/FillOut
+                 whenever focused, regardless of content
+     Selected  — Date ONLY, has a value, not focused (blue-accented)
+     FillOut   — Text/Select ONLY, has a value, not focused (gray-accented)
+     Error     — layers over whichever of the above is active
+   Selected vs FillOut can't be told apart by MudBlazor's own classes alone
+   (both are just .mud-shrink) — AppField.razor adds a per-Type modifier
+   class (.app-field-input--date / --text / --select) specifically so the
+   selectors below can branch on it.
+   ========================================================================== */
+
+/* ---- Touch target (CLAUDE.md §6: >= 44x44 CSS px) ----
+   MudTextField's own outlined padding (18.5px block + line-height) already
+   comes out above 44px in practice, but pinning min-height explicitly
+   documents the requirement instead of relying on that arithmetic holding
+   across future MudBlazor versions. Reuses the existing shared constant —
+   no new --field-* token, per CLAUDE.md §5 one-source-of-truth. */
+.app-field-input .mud-input {
+  min-height: var(--a11y-touch-target-min);
+  box-sizing: border-box;
+}
+
+/* ---- Default (empty, resting) ----
+   Icon rules target .mud-icon-root/.mud-svg-icon directly (not just the
+   containing .mud-input-adornment) in every state below — see the ICON
+   COLOR note at the top of this file for why: plain inheritance from the
+   adornment div doesn't reliably reach the icon (confirmed by testing). */
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled) {
+  background-color: var(--field-color-bg-default);
+}
+/* border-width: var(--field-stroke-width) is applied identically in every
+   state block below (Default/Hover/Disabled/Focused/Selected/FillOut/Error)
+   — uniform 2px per explicit instruction, overriding MudBlazor's own
+   default (1px resting, 2px on :focus-within only — confirmed by reading
+   the shipped CSS). That means focus no longer reads as thicker than the
+   rest; the state distinctions now live entirely in border-color. */
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled) .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-default);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(.mud-disabled)~.mud-input-label {
+  color: var(--field-color-text-default);
+}
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-icon-root,
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-default);
+}
+
+/* ---- Hover (empty, hovered) ----
+   Figma gives ONE hover look, not split by content state — unlike the old
+   placeholder model, there is no "filled + hover" rule here; none of the 7
+   confirmed rows show one, so none is invented. */
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled):hover {
+  background-color: var(--field-color-bg-hover);
+}
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled):hover .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-hover);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(.mud-disabled):hover~.mud-input-label {
+  color: var(--field-color-text-hover);
+}
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled):hover .mud-input-adornment .mud-icon-root,
+.app-field-input .mud-input.mud-input-outlined:not(.mud-shrink):not(:focus-within):not(.mud-disabled):hover .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-hover);
+}
+
+/* ---- Disabled ----
+   ONE disabled look regardless of whether the field has a value (Figma
+   gives a single Disabled entry — simplified from the old placeholder
+   model, which wrongly split disabled-empty vs disabled-filled). Applies
+   whenever .mud-disabled is present, with or without .mud-shrink — no
+   :not(.mud-shrink) guard needed here since this is the only disabled rule.
+   Disabled-hover: a native <input disabled> can't itself be :hover'd in
+   most browsers, but :hover on its ANCESTOR .mud-input div is purely a
+   function of cursor position over that div's box, and MudBlazor doesn't
+   set pointer-events:none anywhere in its input CSS (checked) — so no
+   separate disabled-hover rule is needed, the plain Disabled rule already
+   covers it since nothing un-disables the color on hover either way. */
+.app-field-input .mud-input.mud-input-outlined.mud-disabled {
+  background-color: var(--field-color-bg-disabled);
+  opacity: var(--field-disabled-opacity);
+  cursor: not-allowed; /* CLAUDE.md §6 — disabled must not be color-only */
+}
+.app-field-input .mud-input.mud-input-outlined.mud-disabled .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-disabled);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input .mud-input.mud-input-outlined.mud-disabled~.mud-input-label {
+  color: var(--field-color-text-disabled);
+}
+/* MudBlazor's OWN rule for this exact case
+   (".mud-disabled .mud-svg-icon,.mud-disabled .mud-icon-root{color:var(--mud-palette-text-disabled)}",
+   confirmed by reading the shipped CSS) targets the icon element directly,
+   which beats inheriting color from .mud-input-adornment regardless of that
+   rule's specificity (a direct match always wins over an inherited value).
+   Matched here by targeting the icon directly too, with more classes than
+   theirs (2) so this also wins outright on specificity, not just by luck
+   of load order. */
+.app-field-input .mud-input.mud-disabled .mud-input-adornment .mud-icon-root,
+.app-field-input .mud-input.mud-disabled .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-disabled);
+}
+
+/* ---- Focused (shared by all three Types, wins over Selected/FillOut) ----
+   SUPERSEDES the previous approach (no dedicated Focused colors, relying
+   only on the shared --focus-ring-* outline) — real Figma data shows
+   Focused has its own bg/border/label/icon colors. Both now apply: this
+   rule drives the Figma-specified colors, and the shared --focus-ring-*
+   outline (components.css, unchanged) stays layered on top as the generic
+   visible-focus-indicator CLAUDE.md §6 requires app-wide.
+   Applies regardless of .mud-shrink (empty-but-focused per row 3, or
+   filled-and-focused per row 4 both land here) and regardless of Type —
+   confirmed reading: row 4 ("Filled — Focused") uses these tokens, not
+   Selected/FillOut's, since focus wins over content state. */
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled) {
+  background-color: var(--field-color-bg-focused);
+}
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled) .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-focused);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled)~.mud-input-label {
+  color: var(--field-color-label-focused);
+}
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled) .mud-input-adornment .mud-icon-root,
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled) .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-focused);
+}
+/* "Placeholder" per Figma's own naming — the hint text sitting in the input
+   body once the label has floated (MudBlazor's real Placeholder parameter,
+   rendered as a native <input placeholder>, not something AppField sets
+   itself — CLAUDE.md §6 keeps Label as the only real label). Targets the
+   standard CSS ::placeholder pseudo-element directly rather than guessing a
+   MudBlazor class name for it, so this one selector needs no DOM-structure
+   flag.
+   CONFIRMED INTENTIONAL, not a gap: checked the original states-grid
+   screenshot specifically for this — none of the 7 rows, including the
+   empty-focused one where a placeholder hint would be most visible, show
+   any hint text in the field body. AppField deliberately still has no
+   Placeholder parameter. This rule stays wired-but-unused so the color is
+   already correct the moment a future screen actually needs one (via
+   InputAttributes) — revisit only if a Figma mockup is later shown with
+   visible placeholder text. */
+.app-field-input .mud-input.mud-input-outlined:focus-within:not(.mud-disabled) input::placeholder {
+  color: var(--field-color-placeholder-focused);
+  opacity: 1; /* browsers default <input> placeholder to ~54% opacity of the color; Figma's value is the final color, not a tint of it */
+}
+
+/* ---- Selected (Date ONLY — has a value, not focused, blue-accented) ---- */
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) {
+  background-color: var(--field-color-bg-selected);
+}
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-selected);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled)~.mud-input-label {
+  color: var(--field-color-label-selected);
+}
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-icon-root,
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-selected);
+}
+.app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) input::placeholder {
+  color: var(--field-color-placeholder-selected);
+  opacity: 1;
+}
+
+/* ---- FillOut (Text/Select ONLY — has a value, not focused, gray-accented) ---- */
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled),
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) {
+  background-color: var(--field-color-bg-fillout);
+}
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-outlined-border,
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-fillout);
+  border-width: var(--field-stroke-width);
+}
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled)~.mud-input-label,
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled)~.mud-input-label {
+  color: var(--field-color-label-fillout);
+}
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-icon-root,
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-icon-root,
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-svg-icon,
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-fillout);
+}
+.app-field-input--text .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) input::placeholder,
+.app-field-input--select .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) input::placeholder {
+  color: var(--field-color-placeholder-fillout);
+  opacity: 1;
+}
+
+/* ---- Error (standalone, layers over whichever of the above is active) ----
+   MudBlazor's own error rule for the border is
+   ".mud-input-error .mud-input-outlined-border{border-color:var(--mud-palette-error) !important}"
+   (2 classes) — our border override below has more classes than that in its
+   full chain, so it already won on specificity; confirmed by testing.
+
+   The LABEL color rule is where a real bug was found and fixed: MudBlazor's
+   ACTUAL shipped rule is
+   ".mud-input-control>.mud-input-control-input-container>.mud-input-label-inputcontrol.mud-input-error{color:...!important}"
+   — 4 classes chained with child combinators, confirmed by reading the
+   shipped CSS text directly (not the 2-class rule this file previously
+   assumed). Our old override (.app-field-input .mud-input-label-inputcontrol.mud-input-error,
+   3 classes) was LOWER specificity and silently lost even though both are
+   !important — confirmed by computed style showing MudBlazor's plain
+   default red (#F44336) instead of our token on Text/Select. Fixed below by
+   compounding .app-field-input onto .mud-input-control (the same element,
+   confirmed via DOM), matching their exact structure plus one extra class,
+   so this is guaranteed to win, not just win by coincidence of load order.
+   Token renamed from --field-color-border-error to --field-color-stroke-error
+   (see tokens.css) — same value, Figma's own "Error_stroke" name kept as-is. */
+.app-field-input .mud-input.mud-input-outlined.mud-input-error .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-error) !important;
+  border-width: var(--field-stroke-width);
+}
+.app-field-input.mud-input-control > .mud-input-control-input-container > .mud-input-label-inputcontrol.mud-input-error {
+  color: var(--field-color-text-error) !important;
+}
+
+/* Error icon — CONFIRMED MISSING entirely in the previous round: no rule
+   existed to recolor the adornment icon on error at all, so it silently
+   inherited whatever the underlying content-state (FillOut/Selected) icon
+   rule had already set, instead of turning red like the border/text do.
+   CLAUDE.md §6 requires the error icon+text pairing, not just red text — this
+   closes that gap. No MudBlazor rule competes for icon color on error, but
+   OUR OWN FillOut/Selected icon rules do — confirmed by testing: those
+   selectors are longer (extra :not() guards) and so have HIGHER specificity
+   than this one even without any :not() of its own, and were winning,
+   showing gray/blue instead of red. !important here isn't overriding a
+   library rule (the usual bar for it, CLAUDE.md rule 3) — it's enforcing
+   this component's own explicit design rule that "Error layers over
+   whichever state is active," which must hold regardless of which
+   content-state rule happens to be more specific. */
+.app-field-input .mud-input.mud-input-outlined.mud-input-error .mud-input-adornment .mud-icon-root,
+.app-field-input .mud-input.mud-input-outlined.mud-input-error .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-error) !important;
+}
+
+/* ---- Error, Date branch (MudDatePicker) ----
+   MudDatePicker's base, MudPicker<T>, is NOT a MudFormComponent<T,T> — it
+   has no Error parameter at all (confirmed by reading MudBlazor.xml), so it
+   never gets MudBlazor's own .mud-input-error class above. AppField.razor
+   adds this class itself (app-field-input--error) whenever Error="true",
+   for all three Types uniformly. For Text/Select this duplicates the rule
+   above (harmless — same result, MudBlazor's own class is also present
+   there); for Date it's the ONLY mechanism, since there is no library class
+   to hook. Selectors below carry the same DOM-verification flag as the rest
+   of this section (untested against MudDatePicker's actual rendered markup). */
+.app-field-input.app-field-input--error .mud-input-outlined-border {
+  border-color: var(--field-color-stroke-error) !important;
+  border-width: var(--field-stroke-width);
+}
+.app-field-input.app-field-input--error .mud-input-label-inputcontrol {
+  color: var(--field-color-text-error) !important;
+}
+.app-field-input.app-field-input--error .mud-input-adornment .mud-icon-root,
+.app-field-input.app-field-input--error .mud-input-adornment .mud-svg-icon {
+  color: var(--field-color-icon-error) !important;
+}
+
+/* ==========================================================================
+   Status card ring (AppStatusCard) — scoped under
+   .app-status-card__ring-circular, the Class we pass to MudProgressCircular
+   in Components/AppStatusCard.razor. Targets MudBlazor 8.7.0
+   MudProgressCircular, Color="Color.Default".
+
+   DOM STRUCTURE — CONFIRMED via an actual running instance (dotnet run +
+   headless Chromium, outerHTML read directly), not read from docs/memory:
+     <div role="progressbar" class="mud-progress-circular mud-default-text
+          mud-progress-large mud-progress-static
+          app-status-card__ring-circular app-status-card__ring-circular--X">
+       <svg class="mud-progress-circular-svg" viewBox="22 22 44 44">
+         <circle class="mud-progress-circular-circle mud-progress-static" .../>
+       </svg>
+       <div class="mud-progress-circular-percentage">
+         <span class="app-status-card__ring-value">80%</span>
+       </div>
+     </div>
+   Confirmed by reading the shipped MudBlazor.min.css directly (not guessed):
+     .mud-progress-circular-circle{stroke:currentColor}
+     .mud-progress-circular{display:inline-block;position:relative;
+       color:var(--mud-palette-text-secondary)}
+   So the stroke is just `currentColor` — setting `color` on the SAME element
+   that carries .mud-progress-circular (our own modifier class is compounded
+   directly onto that div, not a descendant) is enough to recolor the ring.
+   The percentage NUMBER text is intentionally NOT themed here — it's our own
+   .app-status-card__ring-value span (components.css), pinned to a fixed safe
+   color independent of ring color; see that file's comment for why (three
+   of the four --status-color-* hues fail 4.5:1 as text).
+
+   Compounded onto .mud-progress-circular (2 classes vs MudBlazor's own
+   1-class base rule) so this wins on specificity outright, not just by
+   coincidence of index.html load order — consistent with this file's other
+   sections. No !important: not overriding an inline style (CLAUDE.md rule 3
+   reserves !important for that), just a plain class-selector rule with
+   higher specificity. */
+.mud-progress-circular.app-status-card__ring-circular--success { color: var(--status-color-success); }
+.mud-progress-circular.app-status-card__ring-circular--warning { color: var(--status-color-warning); }
+.mud-progress-circular.app-status-card__ring-circular--info    { color: var(--status-color-info); }
+.mud-progress-circular.app-status-card__ring-circular--neutral { color: var(--status-color-neutral); }

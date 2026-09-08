@@ -1,0 +1,87 @@
+@* demo/StepperStatesGallery.razor — TEMPORARY states gallery for comparing
+   AppStepper against the Figma "Stepper btn" component family. Not part of
+   Screen A/B; safe to delete once the comparison is done. Uses only the
+   shared AppStepper/AppStepItem + shared tokens/CSS — no page-specific
+   styling beyond this page's own layout, per CLAUDE.md §3.
+
+   CurrentIndex=2 on a 6-step row deliberately puts all 4 states on screen
+   at once, per your explicit instruction: steps 0-1 -> Pass, step 2 ->
+   Active, step 3 -> Selected, steps 4-5 -> Disabled. Step labels/icons
+   reused from the real "تقسيم الأسئلة / الوحدات" sequence visible in
+   demo/ScreenB/TaskTwo_from_figma_design.png, not invented placeholder
+   text, so this demo doubles as a check against real usage.
+
+   Mobile/icon-only isn't a separate fake swatch (same philosophy as
+   ButtonStatesGallery's real :hover/:active cells) — resize the browser
+   below 600px width (--breakpoint-sm) to see the actual responsive-rtl.css
+   rule fire live: labels clip to visually-hidden, icons stay the
+   real, unreduced 40px measured off TaskTwo_Mobile.png. *@
+@page "/demo/stepper-states"
+
+<PageTitle>AppStepper — states gallery</PageTitle>
+
+<h1>AppStepper — states gallery</h1>
+<p>
+    One row, <code>CurrentIndex="2"</code> — all 4 states visible at once:
+    <strong>Pass</strong> (steps 1-2, dark), <strong>Active</strong> (step 3,
+    navy — your current step), <strong>Selected</strong> (step 4, blue — the
+    next step, open to jump to, now with a real hover/pressed response),
+    <strong>Disabled</strong> (steps 5-6,
+    light gray — locked). Click any Pass/Active/Selected step below to move
+    <code>CurrentIndex</code> and watch every other step's state recompute.
+</p>
+<p>
+    <strong>Mobile / icon-only:</strong> resize the browser window below
+    600px wide — this is the real <code>responsive-rtl.css</code> rule
+    firing, not a separate mock-up.
+</p>
+
+<div class="stepper-demo-row">
+    <AppStepper Steps="@_steps"
+                CurrentIndex="@_currentIndex"
+                AriaLabel="خطوات تقسيم الأسئلة"
+                OnStepClick="HandleStepClick" />
+</div>
+
+<p class="stepper-demo-status">
+    Current step: <strong>@_steps[_currentIndex].Label</strong>
+    (index <span dir="ltr">@_currentIndex</span>)
+</p>
+
+@code {
+    // Same 6 step titles/icons as the real sequence in
+    // demo/ScreenB/TaskTwo_from_figma_design.png (right-to-left reading
+    // order: بيانات الاختبار is step 1) — not invented labels.
+    private readonly List<AppStepDefinition> _steps = new()
+    {
+        new(Icons.Material.Filled.Assignment, "بيانات الاختبار"),
+        new(Icons.Material.Filled.LibraryBooks, "أختيار بنوك الأسئلة/الوحدات"),
+        new(Icons.Material.Filled.Info, "أختيار الأسئلة"),
+        new(Icons.Material.Filled.GridView, "تقسيم الأسئلة/الوحدات"),
+        new(Icons.Material.Filled.Info, "مخططات التصحيح"),
+        new(Icons.Material.Filled.Description, "ملخص الاختبار"),
+    };
+
+    private int _currentIndex = 2;
+
+    // Pass/Selected/Active are all real navigation targets (confirmed) —
+    // this demo actually moves CurrentIndex on click, not a decorative
+    // handler, so every state's interactivity is genuinely exercised.
+    private void HandleStepClick(int index) => _currentIndex = index;
+}
+
+<style>
+    /* Page-local layout only (demo page padding/status text) — not a
+       reusable visual pattern, so it's fine here rather than components.css
+       per CLAUDE.md §3.1's rule of thumb. Nothing here sets a color/size
+       that AppStepper itself needs. */
+    .stepper-demo-row {
+        max-width: 900px;
+        padding: 24px 0;
+    }
+
+    .stepper-demo-status {
+        font-size: 14px;
+        color: var(--color-gray-39);
+    }
+</style>

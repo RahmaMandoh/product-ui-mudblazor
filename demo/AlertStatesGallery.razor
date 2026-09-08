@@ -1,0 +1,50 @@
+@* AlertStatesGallery.razor — states gallery for comparing AppAlert's two
+   severities against the Figma reference (TaskTwo_from_figma_design.png).
+   Same convention as ActionBannerStatesGallery.razor/StepperStatesGallery.razor
+   — not part of Screen A/B, uses only the shared AppAlert + shared tokens/
+   CSS, no page-specific component styling (the <style> block below is
+   layout-only, per CLAUDE.md §3). *@
+@page "/demo/alert-states"
+
+<PageTitle>AppAlert — states gallery</PageTitle>
+
+<h1>AppAlert — states gallery</h1>
+<p>
+    Both severities confirmed against
+    <code>demo/ScreenB/TaskTwo_from_figma_design.png</code>: a content-sized,
+    unbordered, fully-rounded pill per severity (see AppAlert.razor's own
+    header comment for the pixel verification). Warning uses
+    <code>role="alert"</code>; Success uses <code>role="status"</code>.
+</p>
+
+<div class="alert-states-grid">
+    <div class="alert-states-cell">
+        <h2>Warning — role="alert"</h2>
+        <AppAlert Severity="AppAlertSeverity.Warning"
+                  Message="إجراء مطلوب: يرجى التأكد من وجود قسم واحد على الأقل، وأن جميع الأسئلة موزعة بالكامل" />
+    </div>
+
+    <div class="alert-states-cell">
+        <h2>Success — role="status"</h2>
+        <AppAlert Severity="AppAlertSeverity.Success"
+                  Message="اخترت عدة أسئلة باستخدام مربعات الاختيارات، ثم قم بتعيينها لدفعة واحدة" />
+    </div>
+</div>
+
+<style>
+    /* Page-local layout only (stacked arrangement of the gallery itself) —
+       not a reusable visual pattern, so it's fine here rather than
+       components.css per CLAUDE.md §3.1's rule of thumb. Nothing here sets
+       a color/size that AppAlert itself needs. */
+    .alert-states-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+        max-width: 700px;
+    }
+
+    .alert-states-cell h2 {
+        font-size: 14px;
+        margin: 0 0 8px;
+    }
+</style>

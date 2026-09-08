@@ -1,0 +1,468 @@
+@* demo/ScreenB/QuestionDistribution.razor — Screen B demo route, per
+   CLAUDE.md §3 ("demo/ScreenB — exam model/question distribution demo,
+   mock data, uses the shared library only"). Same additive-route pattern
+   demo/ScreenA/SyncStatus.razor already established.
+
+   NAMING — page purpose, not literal transliteration: the real nav-linked
+   stub for this area is Pages/QuizsModels.razor ("قوالب الاختبارات" ->
+   "/quizs-models", currently an empty "@page" stub, same status as
+   Pages/SyncStatus.razor was before Screen A's demo route existed). Mirroring
+   that route's own name into "/demo/quizs-models" would carry over an
+   awkward transliteration; this screen's own page title
+   ("تقسيم الأسئلة / الوحدات" — "Question/Unit Distribution") is what the
+   task brief's "Question Distribution" half of "Exam Model & Question
+   Distribution" actually names, so the route/file use that instead:
+   "/demo/question-distribution". FLAGGED, not silently decided — say if you
+   want it wired into Pages/QuizsModels.razor directly instead.
+
+   SCOPE — this file covers ONLY AppHeader + AppStepper, per instruction:
+   - AppHeader needs no page-level markup at all here — it's already
+     rendered once, globally, by Layout/MainLayout.razor above @Body for
+     every route (see that file); this page just needs to exist as a route
+     so AppHeader can be visually confirmed rendering on top of NEW page
+     content, not re-included.
+   - The page-title row above the stepper (page title text + small grid
+     icon, per the Figma reference) is NOT built here — not mentioned in
+     this message's scope ("ONLY the header + stepper"), so left for the
+     same later pass that adds the warning banner/form fields.
+
+   CurrentIndex/SelectedIndex history — the PIXEL-VERIFIED one-off snapshot
+   this page used to render (CurrentIndex="4" + SelectedIndex="3", matching
+   demo/ScreenB/TaskTwo_from_figma_design.png's literal frozen state, where
+   Selected sits BEFORE Active — see AppStepper.razor's SelectedIndex doc
+   comment and tokens.css's Stepper section for that full pixel history) is
+   SUPERSEDED this pass by real click-driven navigation, per instruction.
+   SelectedIndex is deliberately no longer passed here:
+     - That override exists specifically to reproduce ONE static screenshot's
+       non-standard snapshot state — it's not a general navigation rule, and
+       nothing about real interactive stepping should reproduce "Selected
+       lands behind Active" on every click.
+     - Confirmed correct, not just complied with: live navigation's own
+       spec — "stand on current, next one opens" — IS AppStepper's ORIGINAL,
+       default formula (Selected = CurrentIndex + 1, GetState()'s fallback
+       when SelectedIndex is unset). Passing the override here would fight
+       the very behavior being wired in.
+   Net effect: this page's on-load appearance no longer pixel-matches the
+   frozen Figma export (that export captured one static point mid-flow, not
+   the flow's start) — it now starts at index 0 and unlocks progressively
+   via clicks instead, which is the correct behavior for a page that
+   actually navigates rather than displaying one fixed screenshot. *@
+@page "/demo/question-distribution"
+
+<PageTitle>Screen B — تقسيم الأسئلة / الوحدات (demo)</PageTitle>
+
+<MudStack Spacing="6" Class="pa-4">
+    <AppStepper Steps="@_steps"
+                CurrentIndex="@_currentIndex"
+                AriaLabel="خطوات تقسيم الأسئلة/الوحدات"
+                OnStepClick="OnStepClicked" />
+
+    @* Warning instance only — per instruction. The matching Success variant
+       (AppAlert Severity="AppAlertSeverity.Success") lives further down this
+       same Figma screen, next to the drag-and-drop question-distribution
+       toggle, which isn't built on this page yet; see
+       demo/AlertStatesGallery.razor for both severities side by side in the
+       meantime. *@
+    <AppAlert Severity="AppAlertSeverity.Warning"
+              Message="إجراء مطلوب: يرجى التأكد من وجود قسم واحد على الأقل، وأن جميع الأسئلة موزعة بالكامل" />
+
+    @* ========================================================================
+       "بيانات النموذج" (Model Data) panel — header row (title+info icon /
+       "حفظ البيانات" save button) + 4 AppField instances, per instruction.
+       Container: .app-panel + new .app-panel-header (components.css) — the
+       same .app-panel Screen A's filter row already uses; .app-panel-header
+       is a new shared class for this "title+icon vs. action button" header
+       pattern (flagged as reusable, not page-specific, per CLAUDE.md §3.1).
+       No new components: AppField/AppButton/.app-panel/.app-filters-row are
+       all reused exactly as already built.
+
+       FIELD LABELS/STATES — read directly off TaskTwo_from_figma_design.png
+       via pixel crops (CLAUDE.md rule 1), confirmed right-to-left DOM order:
+         1. (rightmost) DISABLED, value "نموذج 1" — Figma gives this field NO
+            visible label at all (no floating label, no border — pixel-
+            confirmed, not a crop artifact). CONFLICT FLAGGED, not silently
+            resolved: CLAUDE.md §6 requires a persistent visible label on
+            every field. Labeled "اسم النموذج" here (same label as field 2,
+            which shares its "نموذج 1" value) as the only textual anchor
+            available — an ASSUMPTION about what this read-only field
+            represents, not a confirmed product-spec name. Logged in
+            DECISIONS.md; flag if a different label is intended.
+         2. "اسم النموذج" (Model Name), value "نموذج 1", editable.
+         3. "كود النموذج" (Model Code), value "نموذج-كود-1", editable.
+         4. (leftmost) "وصف النموذج" (Model Description), value "1", Error
+            state, error text "بيانات خاطئة" — coherent with the value: "1"
+            isn't a valid description, hence "Incorrect data."
+
+       MOBILE ORDER DISCREPANCY — TaskTwo_Mobile.png's stacked order swaps
+       fields 2 and 3 (كود النموذج before اسم النموذج) relative to desktop/
+       tablet. Verified by direct pixel crops on both exports, not a misread.
+       NOT reproduced here: swapping visual order from DOM order at only one
+       breakpoint (via CSS `order`) would decouple keyboard/tab order from
+       visual order, breaking "logical tab order" (CLAUDE.md §6). Treated as
+       a Figma mobile-export inconsistency; DOM order (and so visual order at
+       every breakpoint) stays desktop/tablet's اسم-then-كود sequence. Flag if
+       the mobile reorder was actually intentional.
+
+       Save button: the actual Figma button has NO icon (pixel-cropped,
+       confirmed) — the task anatomy's assumption of a save icon doesn't
+       match the reference, so AppButton is used with no Icon param here.
+
+       Info icon: outlined circle-i (Icons.Material.Outlined.Info — confirmed
+       against the crop, not the filled variant), decorative/non-interactive
+       per instruction ("plain MudIcon, no new component"), so aria-hidden
+       (redundant with the adjacent visible title text). Color="Color.Inherit"
+       so it follows --panel-color-title via CSS, same pattern already used
+       by AppField's own error icon (CLAUDE.md rule 2).
+
+       Panel padding: reuses --panel-space-padding (.app-panel's existing
+       16px) exactly as Screen A's filter row does. NOT claimed as
+       pixel-confirmed against THIS screenshot's proportions specifically —
+       a manual crop measurement around this header row read closer to
+       ~24-30px, but --panel-space-padding is shared across every .app-panel
+       in the library (CLAUDE.md §4 one-source-of-truth per value), so this
+       is flagged for visual confirmation once rendered (CLAUDE.md §7) rather
+       than forking a second padding value off one uncertain manual crop.
+
+       Mock data only (CLAUDE.md demo/ScreenB — "mock data"), matching what
+       the screenshot shows; "حفظ البيانات" has no real save wired up. *@
+    <div class="app-panel">
+        <div class="app-panel-header">
+            <h2 class="app-panel-header__title">
+                بيانات النموذج
+                <MudIcon Icon="@Icons.Material.Outlined.Info" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+            </h2>
+            <AppButton>حفظ البيانات</AppButton>
+        </div>
+
+        <div class="app-filters-row">
+            <AppField T="string" Type="AppFieldType.Text" Label="اسم النموذج" Value="@_modelNameDisplay" Disabled="true" />
+            <AppField T="string" Type="AppFieldType.Text" Label="اسم النموذج" Value="@_modelName" ValueChanged="@(v => _modelName = v)" />
+            <AppField T="string" Type="AppFieldType.Text" Label="كود النموذج" Value="@_modelCode" ValueChanged="@(v => _modelCode = v)" />
+            <AppField T="string" Type="AppFieldType.Text" Label="وصف النموذج" Value="@_modelDescription" ValueChanged="@(v => _modelDescription = v)"
+                      Error="true" ErrorText="بيانات خاطئة" />
+        </div>
+
+        @* ========================================================================
+           CORRECTION, flagged not silent (CLAUDE.md rule 1/6) — this section
+           does NOT get its own .app-panel. Pixel-scanned this whole area's
+           left/right border columns (x=24/x=1634 in
+           TaskTwo_from_figma_design.png) top to bottom: the #DCDCDC border is
+           UNBROKEN from y≈395 (above "بيانات النموذج") all the way to y≈1047
+           (bottom of the not-yet-built "مجمع بنك العناصر" search box) — ONE
+           single merged .app-panel for the whole area, exactly like Screen
+           A's .app-sync-block finding. The only internal separation is the
+           divider LINE below (y=704-705, same #DCDCDC), never a gap between
+           separate boxes. So the "بيانات النموذج" panel opened above is
+           deliberately left OPEN here rather than closed — this section
+           continues inside it. "مجمع بنك العناصر" itself is out of today's
+           scope (not in this pass's anatomy list) and will extend this same
+           still-open panel in a future pass, not start a new one.
+
+           "توزيع الأسئلة" (Question Distribution) section — header
+           (title+icon, no counterpart button this time — confirmed against
+           the reference, nothing sits on the other side of this one) + a new
+           AppToggleGroup + the matching AppAlert Success instance, per
+           instruction. See AppToggleGroup.razor's own header comment for why
+           it's a custom component, not a MudToggleGroup wrapper.
+
+           TOGGLE DEFAULT/ORDER — read directly off the reference, not
+           assumed: "سحب وإملاء" (Drag and Drop) is the SELECTED (solid-blue)
+           option, "اختيار متعدد" (Multiple Choice) is unselected — the
+           OPPOSITE of what you might expect given the success message below
+           it describes the checkbox/multiple-choice flow. Not reconciled
+           narratively (this is mock data reproducing one static screenshot,
+           not a live flow), just transcribed faithfully. DOM order matches
+           the confirmed right-to-left layout: "سحب وإملاء" first (renders
+           rightmost), "اختيار متعدد" second. Per-item icon position also
+           pixel-confirmed, not assumed, and differs between the two:
+           "سحب وإملاء"'s grip icon sits at the pill's own outer/right edge
+           (IconPosition=Start, icon before text), while "اختيار متعدد"'s
+           checklist icon sits at ITS outer/left edge (IconPosition=End, icon
+           after text) — see AppToggleOption's Options list below.
+
+           Alert message text is the EXACT string read off the reference
+           (character-for-character, not paraphrased): "اختر عدة أسئلة
+           باستخدام مربعات الاختيار، ثم قم بتعبئتها دفعة واحدة".
+           ======================================================================== *@
+        <div class="app-panel-header">
+            <h2 class="app-panel-header__title">
+                توزيع الأسئلة
+                <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+            </h2>
+        </div>
+
+        <AppToggleGroup T="string"
+                         Options="@_distributionOptions"
+                         SelectedValue="@_distributionMode"
+                         SelectedValueChanged="@(v => _distributionMode = v)"
+                         AriaLabel="طريقة توزيع الأسئلة" />
+
+        <AppAlert Severity="AppAlertSeverity.Success"
+                  Message="اختر عدة أسئلة باستخدام مربعات الاختيار، ثم قم بتعبئتها دفعة واحدة" />
+
+        <hr class="app-panel-divider" />
+
+        @* "لقد اخترت: [chip]" row — new AppChip, per instruction. Icon is the
+           closest standard Material match to the reference's small
+           file+dots glyph (InsertDriveFile); flagged as an approximation,
+           not a pixel-exact icon match (see DECISIONS.md). DOM order
+           confirmed: the "لقد اخترت:"+icon label sits at the row's own
+           right edge, the chip to its left. *@
+        <div class="app-panel-inline-row">
+            <span class="app-panel-text">
+                لقد اخترت:
+                <MudIcon Icon="@Icons.Material.Filled.ChromeReaderMode" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+            </span>
+            <AppChip Text="@_selectedModelChipText" Icon="@Icons.Material.Filled.InsertDriveFile" />
+        </div>
+
+        @* "عدد الاقسام: N" + "إضافة قسم جديد" row — reuses AppButton, no new
+           component. No real add-section behavior wired up (mock/demo only,
+           per instruction). *@
+        <div class="app-panel-inline-row">
+            <span class="app-panel-text">عدد الاقسام: @_sectionCount</span>
+            <AppButton>إضافة قسم جديد</AppButton>
+        </div>
+
+        @* ========================================================================
+           "مجمع بنوك العناصر" three-column layout — panel stays OPEN from
+           above (same border-scan evidence as last pass: the merged
+           .app-panel from "بيانات النموذج" onward has no break anywhere
+           along its left/right edge), so this section continues inside it
+           rather than starting a new one.
+
+           CORRECTION vs. how this looked from TaskTwo_from_figma_design.png
+           alone: that PNG cuts off right after a "مجمع بنك العناصر" title +
+           search box, which read like a section-wide heading. The fuller
+           demo/ScreenB/UI_ UX 2.jpeg (the only reference that actually shows
+           this area — the Tablet/Mobile PNGs cut off at the exact same
+           point as the desktop one) makes clear that's actually COLUMN 3's
+           OWN header, sitting at the same structural level as "قسم الأول"/
+           "قسم الثاني" — there is no separate section-wide title above the
+           3 columns. So no extra heading is added here beyond the
+           chip/count/button row already built above.
+
+           NO wrapping "column" component — see components.css's own header
+           comment on .app-qbank-column for why (3 genuinely different
+           columns, not one reusable shape).
+
+           HEADER CONTROLS DIFFER PER COLUMN, confirmed not assumed:
+             - Columns 1/2 (empty): "..." overflow menu (MoreHoriz — plain
+               dots, not vertical dots — confirmed against the crop).
+             - Column 3 (populated): "تحديد الكل" (Select All) / "نقل الكل"
+               (Move All, visually muted/disabled-looking — nothing is
+               selected yet) instead of a "..." menu. Neither is wired to
+               real behavior this pass (plain static text), same "structure
+               now, interaction later" scope as the drag handle.
+           A second nested sub-header further down column 3 in the
+           reference ("بنك اسئلة (٣ السؤال/الأسئلة)" + its own "تحديد الكل" +
+           a collapse chevron) is NOT built here — that's a further grouping
+           layer beyond the 3-part anatomy asked for (header/search/
+           content), and adding it would mean inventing collapse/group
+           interaction structure not requested. Flagged, not silently
+           dropped — say if you want that layer too.
+
+           EMPTY STATE — CLAUDE.md §6 fix, not just a color swap: the
+           reference's own empty columns show NO text at all, only the
+           dashed outline (and that outline is red/pink there — see
+           tokens.css's --qbank-color-border-empty note for why that's not
+           reproduced). A shape/color-only empty signal is itself the kind
+           of thing §6 says never to rely on alone, so short neutral text
+           ("لا توجد أسئلة بعد") was added here — not present in the
+           reference, a deliberate accessibility-driven addition in the same
+           spirit as this project's other DECISIONS.md entries.
+
+           SEARCH ICON POSITION — confirmed via a live DOM check: AppField's
+           AdornmentIcon was hardcoded to Adornment.End (renders at the RTL
+           end/left) before this pass; the reference's search icon sits at
+           the RTL START (right) instead, which is why AppField now exposes
+           AdornmentPosition (see AppField.razor) and every search field
+           below passes AdornmentPosition="Adornment.Start".
+
+           TABLET/MOBILE — FLAGGED ASSUMPTION, not confirmed: neither
+           TaskTwo_Tablet.png nor TaskTwo_Mobile.png extends far enough down
+           to show this section at all (both cut off at the exact same
+           "مجمع بنك العناصر" search box the desktop PNG does). There is NO
+           reference for how 3 drag-and-drop columns should behave at
+           narrower widths. Applied the same pattern already established
+           everywhere else in this file (equal columns → single-column stack
+           below --breakpoint-sm, tablet unchanged) for consistency, but
+           this is an extrapolation, not a confirmed design — your own
+           instinct that 3 drag-drop columns might need a fundamentally
+           different mobile pattern (tabs, horizontal scroll) instead of a
+           tall single-column stack is a real, still-open question, best
+           revisited once the drag-and-drop interaction design itself is
+           settled (the right mobile pattern likely depends on it) or once
+           an actual mobile frame for this section exists.
+
+           Mock data (3 cards, CLAUDE.md demo/ScreenB — "mock data"): text/
+           tags read off UI_ UX 2.jpeg's 3 visible sample cards — flagged as
+           an approximate transcription, not pixel-exact OCR, given that
+           source image's compression (same "close enough to demonstrate the
+           real pattern" precedent already used elsewhere in this file). *@
+        <div class="app-qbank-columns">
+            <div class="app-qbank-column app-qbank-column--empty">
+                <div class="app-qbank-column__header">
+                    <div class="app-qbank-column__title-group">
+                        <h3 class="app-qbank-column__title">قسم الثاني</h3>
+                        <p class="app-qbank-column__subtitle">٠ السؤال/الأسئلة</p>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                </div>
+
+                <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionTwo" ValueChanged="@(v => _searchSectionTwo = v)"
+                          AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
+
+                <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+            </div>
+
+            <div class="app-qbank-column app-qbank-column--empty">
+                <div class="app-qbank-column__header">
+                    <div class="app-qbank-column__title-group">
+                        <h3 class="app-qbank-column__title">قسم الاول</h3>
+                        <p class="app-qbank-column__subtitle">٠ السؤال/الأسئلة</p>
+                    </div>
+                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                </div>
+
+                <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionOne" ValueChanged="@(v => _searchSectionOne = v)"
+                          AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
+
+                <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+            </div>
+
+            <div class="app-qbank-column app-qbank-column--populated">
+                <div class="app-qbank-column__header">
+                    <div class="app-qbank-column__title-group">
+                        <h3 class="app-qbank-column__title">مجمع بنك العناصر</h3>
+                        <p class="app-qbank-column__subtitle">@_questionBankItems.Count السؤال/الأسئلة</p>
+                    </div>
+                    <div class="app-panel-inline-row">
+                        <span class="app-qbank-column__link">تحديد الكل</span>
+                        <span class="app-qbank-column__link app-qbank-column__link--muted">نقل الكل »</span>
+                    </div>
+                </div>
+
+                <AppField T="string" Type="AppFieldType.Text" Label="ابحث بنص السؤال" Value="@_searchQuestionBank" ValueChanged="@(v => _searchQuestionBank = v)"
+                          AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
+
+                <div class="app-qbank-column__list">
+                    @foreach (var item in _questionBankItems)
+                    {
+                        <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
+                                         SecondaryTagLabel="@item.SecondaryTagLabel"
+                                         Text="@item.Text"
+                                         Checked="@item.Checked"
+                                         CheckedChanged="@(v => item.Checked = v)" />
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</MudStack>
+
+@code {
+
+    // Same 6 step titles/icons already verified against this exact reference
+    // image in demo/StepperStatesGallery.razor — reused, not re-derived, per
+    // that file's own "not invented placeholder text" note.
+    // "ملخص الاختبار" (index 5) sets AlwaysShowLabel: true — confirmed
+    // against demo/ScreenB/TaskTwo_Mobile.png, which keeps this one step's
+    // label visible on mobile while the other 5 go icon-only (your call:
+    // intentional design, the final/summary step kept as a labeled anchor
+    // point, not an export artifact). See AppStepDefinition.cs for the flag
+    // itself and responsive-rtl.css's .app-stepper__label--always-visible
+    // for how it's honored below 600px.
+    private readonly List<AppStepDefinition> _steps = new()
+    {
+        new(Icons.Material.Filled.Assignment, "بيانات الاختبار"),
+        new(Icons.Material.Filled.LibraryBooks, "أختيار بنوك الأسئلة/الوحدات"),
+        new(Icons.Material.Filled.Info, "أختيار الأسئلة"),
+        new(Icons.Material.Filled.GridView, "تقسيم الأسئلة/الوحدات"),
+        new(Icons.Material.Filled.Info, "مخططات التصحيح"),
+        new(Icons.Material.Filled.Description, "ملخص الاختبار", AlwaysShowLabel: true),
+    };
+
+    // Starts at index 0 (بيانات الاختبار) — no reason found to start this
+    // flow anywhere else; the earlier CurrentIndex="4" was purely to
+    // reproduce one frozen Figma screenshot's mid-flow snapshot (see the
+    // header comment above), not a real "where a fresh flow begins" signal.
+    private int _currentIndex = 0;
+
+    // AppStepItem never fires OnClick for a Disabled step (confirmed in its
+    // own doc comment — the native `disabled` attribute blocks the click
+    // before it ever reaches here), so every index this handler receives is
+    // already guaranteed Pass, Selected, or Active — no bounds/state check
+    // needed. Reassigning _currentIndex is the ONLY state this page owns:
+    // AppStepper recomputes every other step's Pass/Active/Selected/Disabled
+    // class purely from the new CurrentIndex on the next render (its
+    // GetState() math, not anything tracked here), so clicking the
+    // currently-Selected step correctly promotes it to Active, demotes the
+    // old Active to Pass, and opens the next step as the new Selected, all
+    // for free.
+    private void OnStepClicked(int index) => _currentIndex = index;
+
+    // "بيانات النموذج" panel mock data (CLAUDE.md demo/ScreenB — "mock
+    // data"), matching TaskTwo_from_figma_design.png. _modelNameDisplay backs
+    // the disabled field Figma gives no label of its own — see the FIELD
+    // LABELS/STATES note above the markup and DECISIONS.md.
+    private string? _modelNameDisplay = "نموذج 1";
+    private string? _modelName = "نموذج 1";
+    private string? _modelCode = "نموذج-كود-1";
+    private string? _modelDescription = "1";
+
+    // "توزيع الأسئلة" panel mock data (CLAUDE.md demo/ScreenB — "mock
+    // data"). Order/IconPosition/default selection all pixel-confirmed
+    // against TaskTwo_from_figma_design.png — see the markup's own header
+    // comment above for the full reading, not re-derived here.
+    private readonly List<AppToggleOption<string>> _distributionOptions = new()
+    {
+        new("drag", "سحب وإملاء", Icons.Material.Filled.DragIndicator, Adornment.Start),
+        new("multi", "اختيار متعدد", Icons.Material.Filled.Checklist, Adornment.End),
+    };
+    private string _distributionMode = "drag";
+
+    // Chip text mirrors the already-selected model name shown in the Model
+    // Data panel above (_modelName) rather than a second independent mock
+    // value — same "نموذج 1" the reference shows in both places.
+    private string _selectedModelChipText => _modelName ?? string.Empty;
+
+    private int _sectionCount = 2;
+
+    // "مجمع بنوك العناصر" 3-column mock data (CLAUDE.md demo/ScreenB —
+    // "mock data"). Search fields start empty — no venue/series-style mock
+    // list backing them yet, same status as Screen A's own empty-Options
+    // filter fields.
+    private string? _searchSectionOne;
+    private string? _searchSectionTwo;
+    private string? _searchQuestionBank;
+
+    // Card text/tags are an approximate transcription of the 3 sample cards
+    // visible in demo/ScreenB/UI_ UX 2.jpeg — see the markup's own header
+    // comment above for the full reading, not re-derived here.
+    private readonly List<MockQuestionBankItem> _questionBankItems = new()
+    {
+        new() { PrimaryTagLabel = "AudioTest", SecondaryTagLabel = "بنك اسئلة" },
+        new() {
+            PrimaryTagLabel = "سؤال-639225061305407143-2",
+            SecondaryTagLabel = "بنك اسئلة",
+            Text = "أي من التالي يستخدم لتأمين الاتصال بين المتصفح وموقع الويب؟",
+        },
+        new() {
+            PrimaryTagLabel = "سؤال-2",
+            SecondaryTagLabel = "بنك اسئلة",
+            Text = "أي من التالي يستخدم لتأمين الاتصال بين المتصفح وموقع الويب؟",
+        },
+    };
+
+    // Mutable (not a record) — AppQuestionCard's CheckedChanged needs
+    // somewhere to write the new value back to for the checkbox to actually
+    // reflect a toggle.
+    private sealed class MockQuestionBankItem
+    {
+        public required string PrimaryTagLabel { get; init; }
+        public string? SecondaryTagLabel { get; init; }
+        public string? Text { get; init; }
+        public bool Checked { get; set; }
+    }
+}

@@ -1,0 +1,122 @@
+@* FieldStatesGallery.razor — TEMPORARY states gallery for comparing
+   AppField<T> against the Figma "Date Picker Field" component family once
+   real colors land. Not part of Screen A/B; safe to delete once the
+   comparison is done. Uses only the shared AppField<T> + shared tokens/CSS
+   — no page-specific styling beyond this page's own grid layout, per
+   CLAUDE.md §3.
+
+   7 states x 3 AppFieldType values = 21 cells, mirroring the Figma reference
+   screenshot's 3-column (DatePicker / AutoComplete / MudField) x 7-row
+   layout. Row reading, confirmed against the screenshot before coding:
+     1. Default            — empty, resting
+     2. Default — Hover    — empty, hovered (same markup as #1; real
+                              :hover CSS, move your mouse over it)
+     3. Focused             — empty but focused; label floats due to focus
+                              alone, not content (real :focus-within CSS,
+                              click/tab into it)
+     4. Filled — Focused    — has a value + clear "X", AND still focused
+                              (colored/active border+ring layered on top of
+                              the Filled content state)
+     5. Filled              — same value, but resting/blurred: neutral
+                              border, no focus tint. This is the only actual
+                              difference from #4 — it is the same "Filled"
+                              content state shown with vs without the
+                              standalone Focused overlay, not two separate
+                              content-states (tokens.css already anticipated
+                              this: Focused has no --field-color-* of its
+                              own, it only reuses --focus-ring-*).
+     6. Disabled            — reduced opacity, muted, cursor:not-allowed
+     7. Error               — red border/icon/text, red caption below
+   ("DateSelected" in the brief is just the Date-type name for states 4/5;
+   "Fill out" is the Select/Text name for the same states — same markup.)
+
+   NOT re-verified via DevTools for the Select/Date columns specifically —
+   see the flag in mudblazor-overrides.css. Popups (calendar/dropdown) are
+   still MudBlazor's default indigo theme — known gap, not re-skinned here. *@
+@page "/demo/field-states"
+
+<PageTitle>AppField&lt;T&gt; — states gallery</PageTitle>
+
+<h1>AppField&lt;T&gt; — states gallery</h1>
+<p>
+    7 states x 3 <code>AppFieldType</code> values. <strong>Hover</strong> and
+    <strong>Focused</strong>/<strong>Filled — Focused</strong> cells use real
+    CSS (<code>:hover</code> / <code>:focus-within</code>) — interact with
+    them directly rather than trusting the screenshot alone.
+</p>
+
+<div class="field-states-grid">
+    <div class="field-states-corner"></div>
+    <div class="field-states-col-header">Text</div>
+    <div class="field-states-col-header">Select</div>
+    <div class="field-states-col-header">Date</div>
+
+    <div class="field-states-row-header">Default</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" />
+
+    <div class="field-states-row-header">Default — Hover</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" />
+
+    <div class="field-states-row-header">Focused</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" />
+
+    <div class="field-states-row-header">Filled — Focused</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" Value="@("Sample value")" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Value="@("Alabama")" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" DateValue="@_sampleDate" />
+
+    <div class="field-states-row-header">Filled</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" Value="@("Sample value")" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Value="@("Alabama")" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" DateValue="@_sampleDate" />
+
+    <div class="field-states-row-header">Disabled</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" Disabled="true" AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Disabled="true" Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" Disabled="true" />
+
+    <div class="field-states-row-header">Error</div>
+    <AppField T="string" Type="AppFieldType.Text" Label="Label" Value="@("Bad value")" Error="true" ErrorText="This value isn't valid." AdornmentIcon="@Icons.Material.Filled.Warning" />
+    <AppField T="string" Type="AppFieldType.Select" Label="Label" Value="@("Bad value")" Error="true" ErrorText="This value isn't valid." Options="@_states" />
+    <AppField T="string" Type="AppFieldType.Date" Label="Label" DateValue="@_sampleDate" Error="true" ErrorText="This value isn't valid." />
+</div>
+
+@code {
+    // Matches the state names visible in the Figma AutoComplete screenshot
+    // (Alabama/Alaska/Arizona/...) rather than inventing unrelated sample data.
+    private readonly string[] _states = { "Alabama", "Alaska", "Arizona", "Arkansas", "California", "Colorado" };
+
+    // Same date the Figma calendar screenshot has circled (Sept 8, 2026) —
+    // also today's date, not a coincidence worth hiding.
+    private readonly DateTime _sampleDate = new(2026, 9, 8);
+}
+
+<style>
+    /* Page-local layout only (grid arrangement of the gallery itself) — not
+       a reusable visual pattern, so it's fine here rather than
+       components.css per CLAUDE.md §3.1's rule of thumb. Nothing here sets
+       a color/size that AppField itself needs. */
+    .field-states-grid {
+        display: grid;
+        grid-template-columns: 140px repeat(3, minmax(220px, 1fr));
+        gap: 16px 24px;
+        align-items: start;
+    }
+
+    .field-states-col-header {
+        font-weight: 600;
+        font-size: 14px;
+    }
+
+    .field-states-row-header {
+        font-size: 13px;
+        color: var(--color-gray-39);
+        padding-top: 10px;
+    }
+</style>

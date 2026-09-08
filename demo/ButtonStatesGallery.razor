@@ -1,0 +1,90 @@
+@* ButtonStatesGallery.razor — TEMPORARY states gallery for comparing
+   AppButton's Primary variant against the Figma component variants. Not part
+   of Screen A/B; safe to delete once the comparison is done. Uses only the
+   shared AppButton + shared tokens/CSS — no page-specific styling added,
+   per CLAUDE.md §3.
+
+   Default/Hover/Disabled use AppButton's real CSS (no fake swatches) — move
+   your mouse over the Hover cell, or compare Default vs Disabled directly.
+   "onClick"/Active is a genuine :active state, which only paints while a
+   mouse button or key is actually held down — there's no way to freeze that
+   in a static screenshot without faking it, so this cell is instructions,
+   not a live swatch: click and hold on it to see the real --btn-pri-color-bg-active
+   color before releasing. *@
+@page "/demo/button-states"
+
+<PageTitle>AppButton — states gallery</PageTitle>
+
+<h1>AppButton (Primary) — states gallery</h1>
+<p>
+    4 states from the Figma variants: <strong>Default</strong>,
+    <strong>Hover</strong> (move your mouse over it), <strong>onClick</strong>
+    (press and hold the mouse/key to see the real <code>:active</code>
+    color — it won't show in a static screenshot), and <strong>Disabled</strong>.
+    Each state is shown once with an icon and once without, so both
+    configurations are visible for comparison.
+</p>
+
+<div class="button-states-grid">
+    <div class="button-states-cell">
+        <h2>Default</h2>
+        <AppButton>بدأ المزامنة اليدوية</AppButton>
+    </div>
+    <div class="button-states-cell">
+        <h2>Default — with icon</h2>
+        <AppButton Icon="@Icons.Material.Filled.Sync">بدأ المزامنة اليدوية</AppButton>
+    </div>
+
+    <div class="button-states-cell">
+        <h2>Hover</h2>
+        <AppButton>بدأ المزامنة اليدوية</AppButton>
+    </div>
+    <div class="button-states-cell">
+        <h2>Hover — with icon</h2>
+        <AppButton Icon="@Icons.Material.Filled.Sync">بدأ المزامنة اليدوية</AppButton>
+    </div>
+
+    <div class="button-states-cell">
+        <h2>onClick (press &amp; hold)</h2>
+        <AppButton>بدأ المزامنة اليدوية</AppButton>
+    </div>
+    <div class="button-states-cell">
+        <h2>onClick (press &amp; hold) — with icon</h2>
+        <AppButton Icon="@Icons.Material.Filled.Sync">بدأ المزامنة اليدوية</AppButton>
+    </div>
+
+    <div class="button-states-cell">
+        <h2>Disabled</h2>
+        <AppButton Disabled="true">بدأ المزامنة اليدوية</AppButton>
+    </div>
+    <div class="button-states-cell">
+        <h2>Disabled — with icon</h2>
+        <AppButton Disabled="true" Icon="@Icons.Material.Filled.Sync">بدأ المزامنة اليدوية</AppButton>
+    </div>
+
+    <div class="button-states-cell">
+        <h2>Focus (tab to it)</h2>
+        <AppButton>بدأ المزامنة اليدوية</AppButton>
+    </div>
+    <div class="button-states-cell">
+        <h2>End icon (EndIcon position)</h2>
+        <AppButton Icon="@Icons.Material.Filled.Check" IconPosition="Adornment.End">تم</AppButton>
+    </div>
+</div>
+
+<style>
+    /* Page-local layout only (grid arrangement of the gallery itself) — not
+       a reusable visual pattern, so it's fine here rather than
+       components.css per CLAUDE.md §3.1's rule of thumb. Nothing here sets
+       a color/size that AppButton itself needs. */
+    .button-states-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 24px;
+    }
+
+    .button-states-cell h2 {
+        font-size: 14px;
+        margin: 0 0 8px;
+    }
+</style>

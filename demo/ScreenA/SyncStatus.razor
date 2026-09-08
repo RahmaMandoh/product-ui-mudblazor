@@ -1,0 +1,309 @@
+@* demo/ScreenA/SyncStatus.razor — Screen A ("Sync Status Dashboard") demo,
+   mock data, per CLAUDE.md's package structure (§3): "demo/ScreenA — sync
+   dashboard demo, mock data, uses the shared library only." Consumes ONLY
+   AppButton + MudBlazor's own layout components (MudStack/MudText) below —
+   no page-specific CSS file, no hardcoded colors/px. Reference:
+   demo/ScreenA/TaskOne_from_figma_design.png.
+
+   FLAGGED — file placement/route: Pages/SyncStatus.razor already exists
+   (currently just "@page \"/sync-status\"", an empty stub) and is the one
+   AppSidebar's "حالة المزامنة" nav item actually links to
+   (Components/AppSidebar.razor, Href="/sync-status"). That stub is left
+   untouched — this file is a separate, additive demo route, matching how
+   demo/FieldStatesGallery.razor works alongside AppField rather than
+   replacing anything. Route chosen as "/demo/sync-status" (mirrors the real
+   page's name under the /demo/ prefix) rather than "/demo/screen-a" (would
+   mirror the ScreenA/ folder name instead) — flag if you'd rather the other
+   name, or want this wired into Pages/SyncStatus.razor directly instead of
+   living as a separate demo route.
+
+   SCOPE — this step adds the filter row (see FILTER ROW note below) on top
+   of the two Figma banner buttons wired earlier. The three status cards and
+   sync health cards further down are still out of scope, per instruction,
+   shown only as a single caption line below — building those now would be
+   guessing at card chrome that doesn't exist in components.css yet (still
+   listed as TODO there).
+
+   ============================================================================
+   FILTER ROW — new .app-panel + .app-filters-row section, AppField only
+   ============================================================================
+   Container: .app-panel (components.css) — new shared bordered/rounded card
+   class, backed by new --panel-* tokens in tokens.css (flagged there: no
+   existing token fit padding/radius/stroke exactly, --panel-color-stroke
+   deliberately re-derives the same raw --color-lightgray-de value
+   --sidebar-color-stroke already uses, rather than referencing that Token
+   directly, per tokens.css's own "Tokens reference Variables, not other
+   Tokens" convention). UPDATED in a later pass (see the "Sync-actions row +
+   status card rows" restructuring below): the two banner cells no longer
+   apply .app-panel directly — that border now lives on their shared outer
+   .app-sync-actions-row wrapper instead (one panel for both cells, per
+   TaskOne_Tablet.png), with each cell falling back to its own .app-panel-cell
+   look only below 600px. .app-panel itself is unchanged and still backs
+   this filter row exactly as originally built.
+
+   Layout: .app-filters-row (components.css) — 4 equal columns via CSS Grid,
+   collapsing to 1 column below the existing --breakpoint-sm (600px) token
+   (the same one AppHeader already collapses its sync-button label at —
+   reused rather than inventing a second breakpoint value). No separate
+   tablet rule: verified live (see the browser check appended to this file's
+   companion notes) that 4 equal 1fr columns simply narrow together above
+   600px with no wrap/overflow, so tablet needed no rule of its own.
+
+   Options data: fields 1-2 (تصفية حسب المركز / سلسلة الاختبار) pass an
+   EMPTY Options list, each flagged with an inline comment — no venue/series
+   list is wired up yet, per instruction, not an oversight. Field 3 (نوع
+   الشغل) gets a small mock Options list purely so its already-selected
+   value ("يومي") is a real member of the list, also flagged as mock.
+
+   DOM order vs. the Figma's left-to-right reading order: written in
+   RIGHT-to-left DOM order (تاريخ الاختبار, نوع الشغل, سلسلة الاختبار,
+   تصفية حسب المركز) — the same "plain DOM order, first child renders at
+   the RTL start/right edge" convention already used by AppHeader.razor and
+   the button-banner stack above, driven by the app's single ambient
+   dir="rtl" (MainLayout, CLAUDE.md §2), not a hardcoded physical side here.
+
+   Date field: DateValue is the literal 2026/09/10 shown in the Figma
+   screenshot. dir="ltr" is passed via AppField's InputAttributes
+   passthrough (the only hook AppField exposes; restructuring the component
+   to inject a literal `<span dir="ltr">` inside MudDatePicker's own
+   rendered value would violate CLAUDE.md rule 7). CONFIRMED per CLAUDE.md
+   rule 1 — not a guess: ran the built app (dotnet run + Playwright/headless
+   Chromium) and read the live outerHTML of this exact field. UserAttributes
+   lands `dir="ltr"` directly on the innermost
+   <input class="mud-input-slot ..."> that actually carries the date text
+   (id="mudinput..."), not on some outer wrapper — the ideal placement, since
+   the label ("تاريخ الاختبار", correctly still unset/ambient-RTL) is a
+   sibling <label> element, not part of that input. Screenshot confirms the
+   rendered value reads "2026/09/10" left-to-right, not reordered. *@
+@page "/demo/sync-status"
+
+<PageTitle>Screen A — حالة المزامنة (demo)</PageTitle>
+
+<MudStack Spacing="6" Class="pa-4">
+    @* <MudText Typo="Typo.h6">حالة المزامنة</MudText> *@
+
+    <div class="app-panel app-filters-row">
+        <AppField T="string" Type="AppFieldType.Date" Label="تاريخ الاختبار"
+                  DateValue="@_examDate" DateValueChanged="@(d => _examDate = d)"
+                  InputAttributes="@_ltrDateAttributes" />
+        <AppField T="string" Type="AppFieldType.Select" Label="نوع الشغل"
+                  Value="@_shiftType" ValueChanged="@(v => _shiftType = v)"
+                  Options="@_shiftTypeOptions" />
+        <AppField T="string" Type="AppFieldType.Select" Label="سلسلة الاختبار"
+                  Value="@_examSeries" ValueChanged="@(v => _examSeries = v)"
+                  Options="@_emptyOptions" />
+        <AppField T="string" Type="AppFieldType.Select" Label="تصفية حسب المركز"
+                  Value="@_centerFilter" ValueChanged="@(v => _centerFilter = v)"
+                  Options="@_emptyOptions" />
+    </div>
+
+    @* Row order matches the Figma reference read right-to-left: the
+       "manual sync, all centers" cell sits first in DOM order so it renders
+       on the right under the app's ambient dir="rtl" (MudRTLProvider, set
+       once at MainLayout per CLAUDE.md §2) — same "plain DOM order, no
+       row-reverse" approach already documented in AppHeader.razor.
+
+       RESTRUCTURED TWICE this pass:
+       1. Was originally a MudStack Row+Wrap, wrapping purely on intrinsic
+          content width with no explicit breakpoint — found to wrap to
+          stacked too early at tablet widths (~929px). Replaced with an
+          explicit grid (.app-sync-actions-row, components.css), same
+          --breakpoint-sm (600px) mechanism the other rows already use.
+       2. CORRECTED after re-comparing directly against the Figma reference
+          again (superseding an earlier two-separate-panels reading this
+          conversation had settled on): the two banners and the 3-card CBT
+          row below them are ONE single continuous .app-panel
+          (.app-sync-block, components.css), not two. Internal separation is
+          divider LINES only (border-inline-end between the two banners,
+          border-block-end between this row and the card row below, and
+          border-inline-end again between the three cards) — never a gap
+          between separate boxes. Below 600px this still neutralizes back to
+          individually-boxed stacked cells, matching TaskOne_Mobile.png
+          (unchanged by this correction, that reference wasn't in question). *@
+    <div class="app-panel app-sync-block">
+        <div class="app-sync-actions-row" style="--app-sync-actions-row-count: 2">
+            @* Rebuilt as AppActionBanner (Components/AppActionBanner.razor,
+               Figma component "btn_box") — see that component's own header
+               comment for the full anatomy/color-sync/specificity reasoning.
+               Bordered="false" on both: this row already sits inside the
+               shared .app-panel/.app-sync-block above, which supplies the
+               border; see the component's own flagged note on why this
+               deviates from the "btn_box" screenshot's own independent-card
+               look. Badge icon corrected to Sync (was People, an unconfirmed
+               placeholder from before this reference existed) — the actual
+               screenshot shows the circular refresh glyph, not a people
+               icon; that's now hardcoded inside AppActionBanner itself,
+               matching every instance, not passed per-call. *@
+            <AppActionBanner Title="مزامنة يدوية لجميع المراكز"
+                              Description="وصف المزامنة اليدوية"
+                              ButtonLabel="بدء المزامنة اليدوية"
+                              Bordered="false" />
+
+            <AppActionBanner Title="مزامنة إجابات المرشحين للتقييم يدويا"
+                              Description="بدء مزامنة إجابات المرشحين للتقييم المحدد للتاريخ إلى نظام التقييم يدويا"
+                              ButtonLabel="بدء مزامنة إجابات المرشحين"
+                              Bordered="false" />
+        </div>
+
+        @* ====================================================================
+           STATUS CARD ROW (3 cards) — new AppStatusCard.razor. See that
+           component's own header comment for the full anatomy/color-mapping
+           reasoning — only Title/Icon/ProgressPercent/StatusType/
+           StatusLabel/MetaRows differ per card. Bordered="false" on every
+           card here: this row is nested inside .app-sync-block above, which
+           supplies the single shared .app-panel border for the whole block
+           (banners + this row); see AppStatusCard.razor's Bordered param
+           doc and components.css's "Sync-actions block" section.
+
+           ALL numbers/labels/meta text below are MOCK/PLACEHOLDER data read
+           directly off the Figma screenshot (not live, not wired to any real
+           sync service) — flagged per instruction, not an oversight. A few
+           meta rows are a representative approximation of the screenshot
+           rather than a pixel-exact transcription of every fragment shown
+           (e.g. exact secondary meta lines on the 80%/100% cards) — close
+           enough to demonstrate the real pattern (label/value pairs,
+           dir="ltr" values), not claimed as an exact OCR of the reference
+           image.
+
+           DOM order matches the same right-to-left convention as the rest
+           of this page (first child renders at the RTL right edge): "CBT ←
+           المركز الرئيسي" sits rightmost in the Figma reference, so it is
+           first in DOM order here.
+
+           .app-status-cards-row--embedded sets --app-status-cards-row-count
+           inline (3) — same custom-property convention the standalone
+           .app-status-cards-row (4-card row, further below) uses, for
+           consistency, even though only this one row needs it today. ==== *@
+        <div class="app-status-cards-row app-status-cards-row--embedded" style="--app-status-cards-row-count: 3">
+            @* "اخر تشغيل" (last run) is a date+time PAIR in the reference, not
+               one combined string — confirmed by a pixel-ruler crop of
+               TaskOne_from_figma_design.png (CLAUDE.md rule 1), not assumed:
+               every card showing this field renders the date next to the
+               "اخر تشغيل" label and the time alone in the adjacent grid cell
+               with no label of its own. Split into two consecutive tuple
+               entries accordingly — no AppStatusCard API change needed, its
+               2-column meta grid already lays out consecutive entries side
+               by side, and the empty-Label entry now renders with no
+               dangling ":" (AppStatusCard.razor fix). *@
+            <AppStatusCard Title="حالة المزامنة من المركز الرئيسي إلى المراكز"
+                           Icon="@Icons.Material.Filled.Sync"
+                           ProgressPercent="100"
+                           StatusType="AppStatusType.Success"
+                           StatusLabel="ناجح"
+                           Bordered="false"
+                           MetaRows="@(new List<(string, string)> {
+                               ("مركز الاختبار", "Main Venue"),
+                               ("لا", "2"),
+                               ("اخر تشغيل", "20/11/2025"),
+                               ("", "10:44:27ص"),
+                               ("المدة", "00:00"),
+                           })" />
+
+            <AppStatusCard Title="حالة المزامنة من المراكز إلى المركز الرئيسي"
+                           Icon="@Icons.Material.Filled.SwapHoriz"
+                           ProgressPercent="80"
+                           StatusType="AppStatusType.Info"
+                           StatusLabel="تمت"
+                           Bordered="false"
+                           MetaRows="@(new List<(string, string)> {
+                               ("مركز الاختبار", "Qiyas"),
+                               ("المختبرون", "40175"),
+                               ("اخر تشغيل", "20/11/2025"),
+                               ("", "10:44:27ص"),
+                               ("المدة", "157629:29"),
+                           })" />
+
+            @* This card's "اخر تشغيل" value is "0" (not a real date) in the
+               reference itself — a never-synced placeholder card (0%, "لا
+               يوجد"), pixel-confirmed, not invented. Split the same way for
+               consistency (and because it genuinely is two separate grid
+               cells there too), flagged since "0" as a date reads oddly out
+               of context — revisit if a real empty/dash placeholder is
+               preferred once this is wired to live data. *@
+            <AppStatusCard Title="CBT ← المركز الرئيسي"
+                           Icon="@Icons.Material.Filled.People"
+                           ProgressPercent="0"
+                           StatusType="AppStatusType.Neutral"
+                           StatusLabel="لا يوجد"
+                           Bordered="false"
+                           MetaRows="@(new List<(string, string)> {
+                               ("المرشحون", "0"),
+                               ("اخر تشغيل", "0"),
+                               ("", "00:00:00"),
+                               ("المدة", "00:00"),
+                           })" />
+
+        </div>
+    </div>
+
+    <MudText Typo="Typo.h6">صحة خط المزامنة</MudText>
+
+    @* Row 2 (4 cards) — NOT part of the merged .app-sync-block pattern
+       above: the Figma reference keeps each of these 4 cards individually
+       bordered/gapped (confirmed, not assumed — re-checked directly this
+       pass), so this stays a plain .app-status-cards-row grid with
+       AppStatusCard's Bordered="true" default (no Bordered attribute passed
+       below). "الإقرارات" (rightmost in the reference) is first in DOM
+       order, same right-to-left convention as the rest of the page. *@
+    <div class="app-status-cards-row" style="--app-status-cards-row-count: 4">
+        <AppStatusCard Title="الإقرارات"
+                       Icon="@Icons.Material.Filled.CheckCircle"
+                       ProgressPercent="62"
+                       StatusType="AppStatusType.Info"
+                       StatusLabel="قيد التشغيل"
+                       MetaRows="@(new List<(string, string)>())" />
+
+        <AppStatusCard Title="التوزيع"
+                       Icon="@Icons.Material.Filled.CloudUpload"
+                       ProgressPercent="74"
+                       StatusType="AppStatusType.Warning"
+                       StatusLabel="جزئي"
+                       MetaRows="@(new List<(string, string)>())" />
+
+        <AppStatusCard Title="المعالجة المركزية"
+                       Icon="@Icons.Material.Filled.ViewList"
+                       ProgressPercent="100"
+                       StatusType="AppStatusType.Success"
+                       StatusLabel="تمت"
+                       MetaRows="@(new List<(string, string)>())" />
+
+        <AppStatusCard Title="cbt جلب"
+                       Icon="@Icons.Material.Filled.CloudDownload"
+                       ProgressPercent="0"
+                       StatusType="AppStatusType.Neutral"
+                       StatusLabel="لا يوجد"
+                       MetaRows="@(new List<(string, string)> {
+                           ("استدعاءات المراكز الناجحة", "0"),
+                           ("متوسط الوقت", "0 م ث"),
+                           ("المختبرون", "0"),
+                       })" />
+    </div>
+</MudStack>
+
+@code {
+    // Mock/demo state only (CLAUDE.md's demo/ScreenA — "mock data"). No real
+    // venue/series list is wired up yet for fields 1-2, per instruction —
+    // flagged with an empty list rather than invented sample venues.
+    private string? _centerFilter;
+    private string? _examSeries;
+    private readonly List<string> _emptyOptions = new();
+
+    // Field 3 ("نوع الشغل") starts pre-filled (FillOut state) per the Figma
+    // reference. Options list is mock/placeholder data (flagged), sized just
+    // enough to make the pre-filled value a real list member.
+    private string? _shiftType = "يومي";
+    private readonly List<string> _shiftTypeOptions = new() { "يومي", "أسبوعي", "شهري" };
+
+    // Field 4 ("تاريخ الاختبار") — literal date shown in the Figma
+    // screenshot (2026/09/10), not "today" (today happens to be 2026/09/08
+    // per this session, which would NOT match the reference image).
+    private DateTime? _examDate = new(2026, 9, 10);
+
+    // CLAUDE.md §2: wrap embedded numeric/date values so they don't reorder
+    // inside surrounding RTL text. UNVERIFIED which element this actually
+    // lands `dir` on for MudDatePicker specifically — see the FILTER ROW
+    // note above; flagged, not presented as confirmed, per CLAUDE.md rule 1.
+    private readonly Dictionary<string, object> _ltrDateAttributes = new() { ["dir"] = "ltr" };
+
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+}

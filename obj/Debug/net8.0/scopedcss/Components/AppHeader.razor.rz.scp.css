@@ -1,0 +1,189 @@
+/* AppHeader.razor.css — CSS isolation per CLAUDE.md §3.1.
+
+   Component-internal MudBlazor wiring for AppHeader (MudAvatar, MudBadge,
+   MudIconButton x2, MudSwitch, MudButton). Every value is var(--header-*),
+   var(--focus-ring-*) or var(--a11y-*) from wwwroot/styles/tokens.css — no
+   hardcoded color/size, per CLAUDE.md §3.1 and §4.
+
+   Targets MudBlazor 8.7.0. Grounded in the actual shipped
+   _content/MudBlazor/MudBlazor.min.css (read from the installed NuGet
+   package, since MudBlazor ships compiled — no .razor source to read) plus
+   the package's XML doc comments (CLAUDE.md rule 1's first bullet: confirm
+   selectors against the real generated stylesheet rather than guessing).
+   That reading confirmed, for this version:
+     - Avatar/Badge/Button/Switch colors are CSS-class + custom-property
+       driven (e.g. `.mud-avatar{background-color:var(--mud-palette-gray-light)}`),
+       NOT an inline `style="color:..."` attribute — so CLAUDE.md rule 2's
+       inline-style scenario does not apply to these, and every override
+       below is a plain CSS override, not a Color.Inherit workaround.
+     - MudBlazor's own NAMED theme-color utilities (`.mud-primary-text` etc.)
+       DO carry `!important` — avoided entirely here by leaving every
+       component on Color.Default/UncheckedColor.Default in the .razor file,
+       so none of those utility classes are ever applied and no !important
+       is needed on our side either.
+     - `.mud-button-root{ ... outline:0 ...}` — MudBlazor removes the
+       default focus outline and only recolors a background on
+       :focus-visible; it does not add a replacement ring. Confirmed the
+       `--focus-ring-*` rules below are therefore necessary, not redundant.
+   NOT yet confirmed by build+DevTools/scoped-css-bundle: which exact
+   wrapper element MudAvatar/MudIconButton/MudButton/MudSwitch's `Class`
+   parameter lands on for THIS markup specifically (only the pre-existing
+   AppSidebar.razor wiring was verified that way). Selectors below assume
+   `Class` lands on each component's own root element (avatar circle / button
+   root / switch root), consistent with MudComponentBase's documented
+   convention and with the compound classes seen together on one element in
+   the shipped CSS (e.g. ".mud-button-outlined.mud-icon-button"). Flagged per
+   rule 1 — run `dotnet build` and check
+   obj/Debug/net8.0/scopedcss/projectbundle/*.bundle.scp.css (compiles our
+   own selectors correctly) plus a DevTools Elements screenshot (confirms
+   MudBlazor's actual nesting) before treating this as verified. */
+
+.app-header-shell[b-nik4tgohm2] {
+  display: block;
+  width: 100%;
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-bar {
+  display: flex;
+  align-items: center;
+  gap: var(--header-item-gap);
+  padding-block: var(--header-padding-block);
+  padding-inline: var(--header-padding-inline);
+  background-color: var(--header-color-bg);
+  border-block-end: 1px solid var(--header-color-stroke);
+  box-sizing: border-box;
+}
+
+/* ---- Avatar ----
+   Overrides MudBlazor's own `.mud-avatar{color:var(--mud-palette-white);
+   background-color:var(--mud-palette-gray-light)}`. Not an interactive
+   element (no onclick/tabindex here), so no focus-ring/touch-target rules
+   apply to it. */
+.app-header-shell[b-nik4tgohm2]  .app-header-avatar {
+  background-color: var(--header-color-profile-bg);
+  color: var(--header-color-profile-text);
+  font-weight: var(--font-weight-medium);
+}
+
+/* ---- Icon buttons (bell + gear) ----
+   Overrides MudBlazor's `.mud-button-root{color:currentColor}` (which would
+   otherwise inherit the ambient text color, not our token) by setting
+   `color` directly — the icon glyph (`.mud-icon-root`) has no color of its
+   own in MudBlazor's CSS, so it follows via `currentColor` with no extra
+   selector needed.
+   min-width/min-height enlarge the hit area to the CLAUDE.md §6 44x44
+   minimum without resizing the icon glyph itself (MudIconButton's own
+   padding at Size.Medium is a few px short of that). */
+.app-header-shell[b-nik4tgohm2]  .app-header-icon-btn {
+  color: var(--header-color-icon);
+  min-width: var(--a11y-touch-target-min);
+  min-height: var(--a11y-touch-target-min);
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-icon-btn:hover {
+  background-color: var(--header-color-bg-hover);
+}
+
+/* ---- Notification badge ----
+   BadgeClass (per MudBlazor's XML docs: "The CSS classes applied to the
+   badge") lands directly on the `.mud-badge` span itself, so this competes
+   on equal specificity with MudBlazor's own non-!important
+   `.mud-badge.mud-badge-default{color:...;background-color:...}` — our
+   rule wins purely on CSS load order (ProductUI.styles.css loads after
+   MudBlazor.min.css per CLAUDE.md §1.4), no !important needed. */
+.app-header-shell[b-nik4tgohm2]  .app-header-notif-badge {
+  background-color: var(--header-color-lable-bg);
+  color: var(--header-color-lable-text);
+}
+
+/* ---- Dark/light switch ----
+   `.mud-switch-track` and `.mud-switch-thumb-large` are internal elements
+   MudSwitch renders below its own root — Class lands on the root
+   (`.mud-switch`), these are reached as descendants of it, same reasoning
+   AppSidebar.razor.css uses to reach into MudNavMenu's internals. */
+.app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-track {
+  background-color: var(--header-color-switchOff-bg);
+  /* opacity: 54%; */
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-checked + .mud-switch-track {
+  background-color: var(--header-color-switchOn-bg);
+  /* opacity: 1; */
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-thumb-large {
+  background-color: var(--header-color-switchOffIcon-bg);
+  color: var(--header-color-switchOffIcon);
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-base.mud-checked .mud-switch-thumb-large {
+  background-color: var(--header-color-switchOnIcon-bg);
+  color: var(--header-color-switchOnIcon);
+}
+
+/* ---- Sync pill button ----
+   Overrides MudBlazor's `.mud-button-root{border-radius:var(--mud-default-
+   borderradius)}` (a small corner radius, not a pill) and its Color.Default
+   background/text. IconColor defaults to Color.Inherit (MudButton's own
+   documented default), so the check icon already follows this `color`. */
+.app-header-shell[b-nik4tgohm2]  .app-header-sync-btn {
+  background-color: var(--header-btn-bg);
+  color: var(--header-btn-text);
+  border-radius: var(--header-radius-pill);
+  min-height: var(--a11y-touch-target-min);
+}
+
+.app-header-shell[b-nik4tgohm2]  .app-header-sync-btn:hover {
+  filter: brightness(0.92);
+}
+
+/* ---- Focus ring — every interactive element above (CLAUDE.md §6: visible
+   focus, not just outline removed). Placed after the hover rules so it
+   isn't overridden by them on a tied specificity. ---- */
+.app-header-shell[b-nik4tgohm2]  .app-header-icon-btn:focus-visible,
+.app-header-shell[b-nik4tgohm2]  .app-header-sync-btn:focus-visible,
+.app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-base:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-track,
+  .app-header-shell[b-nik4tgohm2]  .app-header-theme-switch .mud-switch-base,
+  .app-header-shell[b-nik4tgohm2]  .app-header-sync-btn {
+    transition: none;
+  }
+}
+
+/* ---- Responsive (Task 3) ----
+   Hamburger only does something below the desktop breakpoint (AppSidebar's
+   MudDrawer is a permanent column at/above Breakpoint.Md — see
+   AppSidebar.razor.css); hidden above it rather than removed from markup,
+   since removing/adding elements per breakpoint would need JS, not just CSS. */
+@media (min-width: 960px) {
+  .app-header-shell[b-nik4tgohm2]  .app-header-hamburger-btn {
+    display: none;
+  }
+}
+
+/* Sync button label: visually hidden (not display:none) below Breakpoint.Sm
+   so the header's icon row fits on narrow phones without wrapping/overflow,
+   while "المزامنة" stays in the accessibility tree via the label span
+   itself rather than a duplicated aria-label (CLAUDE.md §6, native HTML
+   first). Standard clip-based visually-hidden pattern, equivalent to
+   Bootstrap's .visually-hidden (already loaded, but that class can't be
+   applied conditionally by breakpoint from CSS alone, so the same rules are
+   written directly here, scoped to this element). */
+@media (max-width: 599.98px) {
+  .app-header-shell[b-nik4tgohm2]  .app-header-sync-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+}

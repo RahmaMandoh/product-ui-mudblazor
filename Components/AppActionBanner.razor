@@ -1,0 +1,94 @@
+@* Components/AppActionBanner.razor — shared "sync action banner" component
+   (Figma component "btn_box"), CLAUDE.md §3.1. Replaces the two previously
+   hand-rolled, per-instance banner blocks in demo/ScreenA/SyncStatus.razor
+   (one of which had the Class="app-btn-primary" casing bug on a raw <span>,
+   fixed two passes back) with one real component so both banners are
+   structurally guaranteed identical, not just visually patched to match.
+
+   ANATOMY — confirmed against the attached Figma "btn_box" screenshot (3
+   stacked states), per CLAUDE.md rule 1, not guessed: one bordered, rounded
+   white card (the cyan outline in that screenshot is Figma's own selection
+   highlight, not the real border — the real border is --panel-color-stroke,
+   same as every other bordered card on this screen) containing, in RTL DOM
+   order (first child renders at the RTL right edge — same convention as
+   every other row on this page): the circular sync-icon badge, a
+   title+description text stack, then the pill button with a small leading
+   ChevronLeft icon.
+
+   STATES — CORRECTED this pass: this component has the SAME 3-state model
+   as AppButton itself — Default, Hover, and onClick/pressed — NOT a
+   Disabled state. An earlier pass misread the reference screenshot's 3rd,
+   lightest-blue row as "Disabled" and built a whole Disabled code path
+   (a Disabled parameter here, a --action-banner-color-bg-disabled token, a
+   modifier class, a verified !important override of MudBlazor's own
+   disabled rules). All of that is REMOVED — it was really the onClick/
+   pressed state, the exact same concept AND same token AppButton's own
+   :active already uses (--btn-pri-color-bg-active, #75bcd9). No Disabled
+   parameter exists on this component at all; see components.css's own
+   header comment on this component for the corrected color-sync/specificity
+   reasoning (confirmed no MudBlazor !important conflict exists for :active,
+   unlike :disabled — checked, not assumed, per CLAUDE.md rule 1).
+
+   Container border: Bordered param, default true (this component's own
+   full independent card, matching the Figma "btn_box" reference exactly),
+   same precedent as AppStatusCard.razor's own Bordered param — pass false
+   when nesting inside a parent that already draws one shared border and
+   handles separation via divider lines instead. FLAGGED, a real call I'm
+   making here, not literally requested: the "btn_box" screenshot shows
+   each banner as its own fully-bordered independent card, which conflicts
+   with this page's already-verified (against TaskOne_from_figma_design.png
+   /TaskOne_Tablet.png) merged-single-panel-with-divider-lines treatment of
+   these exact two banners (components.css's ".app-sync-block" section). I
+   kept the already-verified page layout (Bordered="false" at both Screen A
+   call sites, see SyncStatus.razor) rather than regressing it, since a
+   component-definition screenshot showing a symbol in isolation is weaker
+   evidence for the ACTUAL PAGE's rendered layout than the direct
+   page-screenshot comparison already done for that layout — flag if you
+   actually want the two banners to split into fully independent cards
+   instead.
+
+   Icon: ChevronLeft (Icons.Material.Filled.ChevronLeft — confirmed present
+   in the installed MudBlazor 8.7.0 assembly by reading its metadata
+   directly, not guessed) matches the small leading chevron in the
+   screenshot most closely; placed via AppButton's own IconPosition
+   parameter (composed, not reimplemented).
+
+   Badge: deliberately NO border/stroke, unlike an earlier ad-hoc
+   .app-icon-badge--primary fix (two passes back) — the actual "btn_box"
+   Figma reference shows a plain filled circle with no stroke. That earlier
+   instruction predates this reference; flag if you still want a border on
+   top of this confirmed anatomy. *@
+
+<div class="@RootClass">
+    <div class="app-action-banner__content">
+        <span class="app-action-banner__badge" aria-hidden="true">
+            <MudIcon Icon="@Icons.Material.Filled.Sync" Color="Color.Inherit" Size="Size.Medium" />
+        </span>
+        <MudStack Spacing="0">
+            <MudText Typo="Typo.body1">@Title</MudText>
+            <MudText Typo="Typo.body2">@Description</MudText>
+        </MudStack>
+    </div>
+    <AppButton Icon="@Icons.Material.Filled.ChevronLeft" 
+           IconPosition="Adornment.End" 
+           OnClick="OnClick">
+    @ButtonLabel
+</AppButton>
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string Description { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string ButtonLabel { get; set; } = string.Empty;
+
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    /// Default true: own .app-panel border/background, matching the Figma
+    /// "btn_box" component in isolation. Both current Screen A call sites
+    /// pass false — see this file's header comment.
+    [Parameter] public bool Bordered { get; set; } = true;
+
+    private string RootClass => (Bordered ? "app-panel " : "") + "app-action-banner";
+}

@@ -1,0 +1,56 @@
+{
+  "actionsRow": {
+    "rect": {
+      "left": 32,
+      "right": 897,
+      "top": 296.6,
+      "width": 865
+    },
+    "gridTemplateColumns": "414.5px 414.5px",
+    "childCount": 2,
+    "childRects": [
+      {
+        "left": 464.5,
+        "right": 879,
+        "top": 314.6,
+        "width": 414.5
+      },
+      {
+        "left": 50,
+        "right": 464.5,
+        "top": 314.6,
+        "width": 414.5
+      }
+    ]
+  },
+  "cardsRow3": {
+    "rect": {
+      "left": 32,
+      "right": 897,
+      "top": 452.6,
+      "width": 865
+    },
+    "gridTemplateColumns": "276.328px 276.328px 276.344px",
+    "childCount": 3,
+    "childRects": [
+      {
+        "left": 602.7,
+        "right": 879,
+        "top": 470.6,
+        "width": 276.3
+      },
+      {
+        "left": 326.3,
+        "right": 602.7,
+        "top": 470.6,
+        "width": 276.3
+      },
+      {
+        "left": 50,
+        "right": 326.3,
+        "top": 470.6,
+        "width": 276.3
+      }
+    ]
+  }
+}

@@ -1,0 +1,119 @@
+@* AppHeader — top bar for the CONTENT COLUMN ONLY.
+
+   Per the task brief, this sits above <article class="content"> in
+   MainLayout.razor, NOT above the sidebar. The sidebar keeps its own
+   "SaveMyExams" logo inside itself; this component never renders a logo.
+
+   The wrapping <div class="app-header-shell"> exists for the same reason
+   AppSidebar.razor needs "app-sidebar-shell": Blazor's scoped-CSS attribute
+   only ever attaches to a raw HTML element written directly in THIS .razor
+   file, never to a component tag like <MudAvatar>/<MudIconButton> — without
+   a real wrapping element, AppHeader.razor.css's `::deep` selectors would
+   have no scope anchor and could never match anything (same finding
+   AppSidebar.razor documents and verified there by actually running the
+   app; reused here rather than re-verified from scratch since it's the
+   same Blazor/MudBlazor version).
+   https://learn.microsoft.com/aspnet/core/blazor/components/css-isolation
+
+   No `dir` is set anywhere here and the CSS uses only logical properties —
+   RTL is handled once, globally, by MainLayout's MudRTLProvider (CLAUDE.md
+   §2). The elements below are written in plain DOM order (Avatar, then the
+   notification bell, gear, dark-mode switch, sync button); the page's
+   inherited dir="rtl" mirrors a plain flex row visually so this matches the
+   Figma right-to-left order without a row-reverse or any left/right
+   assumption in the CSS. *@
+<div class="app-header-shell">
+    <header class="app-header-bar">
+        @* Hamburger — opens AppSidebar's drawer below the desktop breakpoint.
+           Placed as the first child: closest to the sidebar, which sits on
+           the inline-end/right side of the page (Task 3 plan). Hidden at/
+           above Breakpoint.Md via CSS (app-header-hamburger-btn rule) since
+           the sidebar is a permanently visible column there and the button
+           would do nothing. *@
+        <MudIconButton Icon="@Icons.Material.Outlined.Menu"
+                       Color="Color.Default"
+                       Class="app-header-icon-btn app-header-hamburger-btn"
+                       OnClick="OnMenuClick"
+                       aria-label="فتح القائمة الجانبية" />
+
+        <MudAvatar Class="app-header-avatar" Color="Color.Default" Size="Size.Medium">
+            ر
+        </MudAvatar>
+
+        @* MudBadge.Max natively caps the displayed count (defaults to 99) —
+           confirmed against MudBlazor 8.7.0's shipped XML docs, so no custom
+           counter component is needed here. Capped at 9 per your "9+" example;
+           MudBadge appends "+" itself once Content exceeds Max. *@
+        <MudBadge Content="@_notificationCount" Max="9" Overlap="true" Color="Color.Default"
+                  BadgeClass="app-header-notif-badge"
+                  BadgeAriaLabel="@($"{_notificationCount} إشعارات جديدة")">
+            <MudIconButton Icon="@Icons.Material.Outlined.Notifications"
+                           Color="Color.Default"
+                           Class="app-header-icon-btn"
+                           aria-label="الإشعارات" />
+        </MudBadge>
+
+        <MudIconButton Icon="@Icons.Material.Outlined.Settings"
+                       Color="Color.Default"
+                       Class="app-header-icon-btn"
+                       aria-label="الإعدادات" />
+
+        @* Dark/light toggle — VISUAL ONLY for now (see @code below for why:
+           making it actually swap themes needs a second MainLayout.razor
+           change that this task's brief explicitly scopes out). *@
+        @* Size.Large (72x52, MudBlazor's own scale) rather than the visually
+           closer Medium (58x38): its <input> hit box exactly matches the
+           rendered span with no separate way to pad a bigger click target
+           around it, so hitting the 44x44 rule (CLAUDE.md §6) means sizing
+           the control itself up, not just its CSS. *@
+        <MudSwitch ThumbIcon="@Icons.Material.Outlined.DarkMode"
+         T="bool" Value="_isDarkMode" ValueChanged="OnDarkModeToggled"
+                   Color="Color.Default" UncheckedColor="Color.Default"
+                   Size="Size.Large"
+                   Class="app-header-theme-switch"
+                   aria-label="الوضع الداكن" />
+                @* Color of the icon didn't work, I will back to it later *@
+
+        @* IconColor is not set: MudButton.IconColor defaults to Color.Inherit
+           (confirmed in the XML docs), so the check icon already follows
+           --header-btn-text via `color` on the button — no extra param
+           needed. *@
+        <MudButton Class="app-header-sync-btn"
+                   Variant="Variant.Filled"
+                   Color="Color.Default"
+                   StartIcon="@Icons.Material.Filled.CheckCircle">
+            @* Label wrapped so it can be visually hidden (not display:none)
+               below Breakpoint.Sm, keeping "المزامنة" in the accessibility
+               tree — see app-header-sync-label in the CSS (CLAUDE.md §6:
+               native semantic HTML + a visible label, ARIA only to fill a
+               real gap; no gap here since the text itself still exists). *@
+            <span class="app-header-sync-label">المزامنة</span>
+        </MudButton>
+    </header>
+</div>
+
+@code {
+    // Fires the hamburger click up to MainLayout, which owns the drawer's
+    // open/closed state (see MainLayout.razor's _drawerOpen).
+    [Parameter] public EventCallback OnMenuClick { get; set; }
+
+    // Demo placeholder count — same status as AppSidebar's demo nav items,
+    // not real notification data.
+    private int _notificationCount = 10;
+
+    private bool _isDarkMode;
+
+    private void OnDarkModeToggled(bool value)
+    {
+        _isDarkMode = value;
+
+        // TODO (flagged, not silently decided): this only flips the switch's
+        // own visual state right now. Actually swapping the app's palette
+        // means binding MudThemeProvider's `IsDarkMode` in MainLayout.razor —
+        // a second change to that file beyond adding <AppHeader/>, which
+        // this task's brief restricts to one line. Separately, AppTheme.cs's
+        // PaletteDark is still empty placeholders, so even a correct binding
+        // would render MudBlazor's stock dark colors today, not our tokens.
+        // Needs an explicit go-ahead before touching MainLayout again.
+    }
+}

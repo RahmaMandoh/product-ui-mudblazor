@@ -1,0 +1,31 @@
+@* Regular navigation link — reused for both top-level and nested/child rows.
+   Font-size (top-level vs child) is resolved purely by DOM depth in
+   AppSidebar.razor.css (::deep .mud-navgroup-collapse .mud-nav-link-text),
+   not by a parameter here — there's nothing state-wise that differs between
+   the two per the Figma spec besides that one CSS value. *@
+<MudNavLink Href="@Href" Match="@Match" Icon="@Icon" IconColor="Color.Inherit">
+    @if (!string.IsNullOrEmpty(CustomIcon))
+    {
+        <img src="@CustomIcon"
+             class="sidebar-custom-icon"
+             alt="" />
+    }
+    @Text
+</MudNavLink>
+
+@code {
+    [Parameter, EditorRequired]
+    public string Text { get; set; } = string.Empty;
+
+    [Parameter]
+    public string? Href { get; set; }
+
+    [Parameter]
+    public string? Icon { get; set; }
+
+    [Parameter]
+    public NavLinkMatch Match { get; set; } = NavLinkMatch.All;
+    
+    [Parameter]
+    public string? CustomIcon { get; set; }
+}

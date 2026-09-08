@@ -1,0 +1,26 @@
+﻿@inherits LayoutComponentBase
+@page "/"
+
+<PageTitle>Home</PageTitle>
+
+
+<AppField T="string" Label="الاسم" @bind-Value="_name" />
+
+<AppField T="string" Type="AppFieldType.Select" Label="اختر مركز"
+          Options="@(new List<string>{"القاهرة", "الجيزة", "الإسكندرية"})"
+          @bind-Value="_selected" />
+
+<AppField T="string" Type="AppFieldType.Date" Label="التاريخ"
+          @bind-DateValue="_date" />
+
+<AppField T="string" Label="الاسم" @bind-Value="_name2"
+          Error="true" ErrorText="الحقل مطلوب" />
+
+<AppButton Icon="@Icons.Material.Filled.Sync">بدء المزامنة</AppButton>
+
+@code {
+    private string? _name;
+    private string? _selected;
+    private DateTime? _date;
+    private string? _name2;
+}

@@ -1,0 +1,60 @@
+@inherits LayoutComponentBase
+
+@* MudThemeProvider has no RightToLeft parameter in MudBlazor 8.7.0 (verified
+   against the installed package's XML docs — CLAUDE.md §2's snippet is
+   accurate for an older MudBlazor version, not this one). It picks up RTL
+   automatically via the CascadingValue that MudRTLProvider below provides;
+   setting it here would not compile as a known parameter and, in this
+   Blazor build, only fails at RUNTIME (confirmed by actually running the
+   app) rather than at `dotnet build` time. *@
+<MudThemeProvider Theme="AppTheme.Default" />
+@* Required by any MudBlazor component that opens a popover/overlay
+   (MudAutocomplete's dropdown, MudDatePicker's calendar, MudMenu, etc.) —
+   confirmed missing by an actual runtime exception, not a guess:
+   "Missing <MudPopoverProvider />" thrown from MudPopoverBase.OnInitializedAsync
+   the moment AppField's Select/Date branches tried to initialize. DI
+   registration (AddMudServices() in Program.cs) was already present; only
+   this render-tree component was missing. Placed alongside MudThemeProvider,
+   outside MudRTLProvider, matching MudBlazor's own installation docs
+   (providers render via a portal, not as part of the visible layout tree). *@
+<MudPopoverProvider />
+<MudRTLProvider RightToLeft="true">
+    <MudLayout>
+        <div class="page">
+            <AppSidebar @bind-Open="_drawerOpen" />
+
+            <main>
+                @* AppHeader sits outside .content-scroll on purpose: it's the
+                   fixed part of this column (per the required layout), while
+                   .content-scroll is the one part that actually scrolls.
+                   The pre-existing "top-row" (default Blazor template's
+                   About link — unrelated to the Figma header) is folded into
+                   that scrolling region rather than deleted, since removing
+                   it wasn't asked for here; only its position changed. *@
+                <AppHeader OnMenuClick="ToggleDrawer" />
+
+                <div class="content-scroll">
+                    @* <div class="top-row px-4">
+                        <a href="https://learn.microsoft.com/aspnet/core/" target="_blank">About</a>
+                    </div> *@
+
+                    <article class="content px-4">
+                        @Body
+                    </article>
+                </div>
+            </main>
+        </div>
+    </MudLayout>
+</MudRTLProvider>
+
+@code {
+    // Single source of truth for the sidebar drawer's open/closed state,
+    // owned here since AppHeader (hamburger) and AppSidebar (MudDrawer) are
+    // siblings with no other shared state. Default false: AppSidebar opens
+    // it itself on first render for desktop-width screens (see its
+    // OnAfterRenderAsync) — see that file's Open parameter comment for why
+    // this component doesn't just default to true instead.
+    private bool _drawerOpen = false;
+
+    private void ToggleDrawer() => _drawerOpen = !_drawerOpen;
+}

@@ -1,0 +1,132 @@
+@* Components/AppStepper.razor — shared step-nav strip (CLAUDE.md §3.1),
+   wraps a list of AppStepItem. Split into two components (wrapper +
+   item) rather than one monolithic file: this file owns layout/sequencing
+   (the connector line, the CurrentIndex -> per-step State math), AppStepItem
+   owns one step's own markup/state-to-class mapping — the two concerns
+   don't overlap, and AppStepItem is independently reusable if a future
+   screen ever needs a single step outside a full sequence.
+
+   Renders as <ol> (a stepper genuinely IS an ordered sequence — native
+   semantic HTML first, CLAUDE.md §6) inside a positioning shell <div>, since
+   the connector is a set of absolutely-positioned elements behind every icon
+   and "<div> directly inside <ol>" isn't valid HTML — they live in the
+   shell, not the list.
+
+   CONNECTOR — N-1 independent segments, not one spanning line (restructured
+   this pass; was previously a single .app-stepper__connector div). Root
+   cause for the change: re-scanning demo/ScreenB/TaskTwo_from_figma_design.png
+   gap-by-gap (tokens.css's Stepper section has the full pixel history) found
+   the real line is genuinely two-color — dark for a segment leading into a
+   Pass/Active/Selected step, light gray for one leading into Disabled — which
+   a single element with one background-color can never render. Each segment
+   spans exactly from item i's icon-center to item i+1's icon-center via
+   percentage math: with N equal-width flex items (.app-stepper__item,
+   flex: 1 0 0) and each icon centered within its own item
+   (justify-content: center), item i's icon-center sits at exactly
+   (i + 0.5)/N of the row's inline size measured from the inline-start edge —
+   the RTL row's right edge, where index 0 renders (this component's own
+   established "first step renders at the RTL start" convention). Segment i
+   therefore starts at (i + 0.5)/N and is exactly 1/N wide, landing its far
+   edge on (i + 1.5)/N — item i+1's icon-center. See components.css's
+   .app-stepper__connector-segment for the actual calc().
+
+   Single horizontal row, not a wrapping grid: the isolated "Stepper btn"
+   Figma component sheet shows several rows, but those are DEFAULT/HOVER/
+   ONCLICK variant swatches for demonstration, not literal wrapped layout —
+   confirmed against the real usage in
+   demo/ScreenB/TaskTwo_from_figma_design.png, which is unambiguously one
+   connected horizontal row (RTL: first step rightmost). No manual dir/rtl
+   attribute is set here (CLAUDE.md §2 — only MainLayout's
+   MudThemeProvider/MudRTLProvider set RightToLeft); the row simply inherits
+   the app-wide RTL context and flexbox reverses direction on its own.
+
+   No MudBlazor class is targeted anywhere in this component or AppStepItem
+   — every rule lives in the shared styles/components.css +
+   styles/responsive-rtl.css, not mudblazor-overrides.css or a .razor.css
+   isolation file (CLAUDE.md §3.1: this defines a new reusable visual
+   pattern, not one component's internal MudBlazor wiring). *@
+
+<div class="app-stepper-shell">
+    @for (var g = 0; g < Steps.Count - 1; g++)
+    {
+        var segmentIndex = g;
+        var leadsIntoDisabled = GetState(segmentIndex + 1) == AppStepState.Disabled;
+        <div class="@(leadsIntoDisabled ? "app-stepper__connector-segment app-stepper__connector-segment--disabled" : "app-stepper__connector-segment")"
+             style="@($"--app-stepper-segment-index: {segmentIndex}; --app-stepper-segment-count: {Steps.Count}")"
+             aria-hidden="true"></div>
+    }
+    <ol class="app-stepper" aria-label="@AriaLabel">
+        @for (var i = 0; i < Steps.Count; i++)
+        {
+            var index = i;
+            var step = Steps[index];
+            <AppStepItem Icon="@step.Icon"
+                         Label="@step.Label"
+                         AlwaysShowLabel="@step.AlwaysShowLabel"
+                         State="@GetState(index)"
+                         OnClick="@(() => OnStepClick.InvokeAsync(index))" />
+        }
+    </ol>
+</div>
+
+@code {
+    /// AppStepDefinition (Components/AppStepDefinition.cs), not a plain
+    /// tuple — see that file's own doc comment for why (AlwaysShowLabel
+    /// needs a name, not a third positional field every call site must spell
+    /// out).
+    [Parameter, EditorRequired] public List<AppStepDefinition> Steps { get; set; } = new();
+
+    [Parameter, EditorRequired] public int CurrentIndex { get; set; }
+
+    /// Overrides which index renders as Selected — defaults to
+    /// CurrentIndex + 1 (the original, and still most common, "next step
+    /// open to jump to" reading). ADDED for Screen B's real
+    /// "تقسيم الأسئلة/الوحدات" screen (demo/ScreenB/TaskTwo_from_figma_design.png):
+    /// pixel-sampled the actual rendered icon-circle fill colors there
+    /// against the 4 confirmed --stepper-color-bg-* tokens (CLAUDE.md rule 1
+    /// — not inferred from the page title or step order) and found Selected
+    /// sitting BEFORE Active — one step's icon rendered the darkblue--15
+    /// family, the very next one rendered the blue-00 family, the opposite
+    /// order the CurrentIndex+1 formula assumes, and something no value of
+    /// CurrentIndex alone can reproduce (this is an index-ORDER finding, not
+    /// a color one — which of Active/Selected is styled darkblue vs. blue-00
+    /// was later REVERSED in components.css/tokens.css per a later decision,
+    /// see DECISIONS.md; that swap doesn't affect this override's own logic
+    /// at all, since it operates purely on indices). Default value keeps every
+    /// existing caller (StepperStatesGallery, and any future screen that
+    /// never sets it) byte-for-byte identical to the prior hardcoded
+    /// "index == CurrentIndex + 1" behavior — this is additive, not a
+    /// redesign of the state model.
+    [Parameter] public int? SelectedIndex { get; set; }
+
+    /// Fires with the clicked step's index — only for Pass/Selected/Active
+    /// (AppStepItem never fires OnClick for a Disabled step, see its own
+    /// header comment), so no extra guard is needed here either.
+    [Parameter] public EventCallback<int> OnStepClick { get; set; }
+
+    /// Accessible name for the step list as a whole (e.g. "خطوات تقسيم
+    /// الأسئلة") — screen-specific, so it's a required parameter rather than
+    /// a hardcoded string here.
+    [Parameter, EditorRequired] public string AriaLabel { get; set; } = string.Empty;
+
+    /// The confirmed real semantics (see tokens.css's Stepper section for
+    /// the full history — this replaced an earlier 3-state guess):
+    ///   index == CurrentIndex           -&gt; Active
+    ///   index == EffectiveSelectedIndex -&gt; Selected  (default: CurrentIndex + 1)
+    ///   index &lt; CurrentIndex            -&gt; Pass
+    ///   otherwise                       -&gt; Disabled
+    /// Active/Selected are checked before the Pass/Disabled split (rather
+    /// than Pass being "index &lt; CurrentIndex" checked first) so a
+    /// SelectedIndex override that lands BEFORE CurrentIndex — Screen B's
+    /// real case, see SelectedIndex's own doc comment — still wins over the
+    /// default Pass classification for that one index.
+    private int EffectiveSelectedIndex => SelectedIndex ?? CurrentIndex + 1;
+
+    private AppStepState GetState(int index)
+    {
+        if (index == CurrentIndex) return AppStepState.Active;
+        if (index == EffectiveSelectedIndex) return AppStepState.Selected;
+        if (index < CurrentIndex) return AppStepState.Pass;
+        return AppStepState.Disabled;
+    }
+}

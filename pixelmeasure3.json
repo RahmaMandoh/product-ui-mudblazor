@@ -1,0 +1,20 @@
+{
+  "cbtBox": {
+    "minX": 287,
+    "maxX": 350,
+    "minY": 436,
+    "maxY": 452,
+    "width": 63,
+    "height": 16
+  },
+  "badgeBox": {
+    "minX": 480,
+    "maxX": 535,
+    "minY": 414,
+    "maxY": 469,
+    "width": 55,
+    "height": 55
+  },
+  "borderAt_y340": 0,
+  "borderAt_y400": 0
+}

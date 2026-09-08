@@ -1,0 +1,82 @@
+@* Components/AppStepItem.razor — one step in AppStepper (CLAUDE.md §3.1,
+   Figma component "Stepper btn"). Native <button>, not a MudBlazor wrapper:
+   MudBlazor 8.7.0 does ship MudStep/MudStepper, but that component's model
+   is a linear/non-linear WIZARD — connected steps driving a single
+   switching content panel, with a built-in Next/Previous/Complete action
+   bar (verified against the installed MudBlazor.xml docs, not assumed).
+   This screen's stepper is a page-level nav strip with no content-panel
+   switching and no wizard action bar (confirmed against the real usage in
+   demo/ScreenB/TaskTwo_from_figma_design.png) — forcing that layout into
+   MudStepper would mean hiding almost all of its own built-in chrome,
+   which is closer to "restructuring a MudBlazor component" than styling
+   one (CLAUDE.md rule 7). A small custom component, same pattern as
+   AppButton/AppStatusCard, fits without fighting anything.
+
+   Disabled uses the real disabled attribute (native semantic HTML first,
+   CLAUDE.md §6): a disabled <button> is already excluded from the tab
+   order and announced as unavailable by assistive tech, so no extra
+   aria-disabled is layered on top of it. cursor:not-allowed is added in
+   CSS since the UA default for a disabled button is just cursor:default,
+   which doesn't by itself communicate "locked" the way CLAUDE.md §6 asks.
+
+   The icon is aria-hidden: the button's accessible name comes from its own
+   text content, which is exactly the label span below — marking the icon
+   hidden avoids the icon's own glyph name (e.g. "Info") being announced
+   alongside the real step title.
+
+   The label span is the ONE place the step title lives, always rendered as
+   real text on every breakpoint (never display:none) — CLAUDE.md §6 (a
+   step's meaning must survive when the label is hidden on mobile). Desktop
+   shows it normally; responsive-rtl.css visually clips it below 600px
+   using the exact same technique already established in
+   AppHeader.razor.css for its own sync-button label (Bootstrap's
+   .visually-hidden equivalent, written out by hand since it needs to apply
+   conditionally by breakpoint) — reused, not reinvented. *@
+
+<li class="app-stepper__item">
+    <button type="button"
+            class="@ItemClass"
+            disabled="@(State == AppStepState.Disabled)"
+            aria-current="@(State == AppStepState.Active ? "step" : null)"
+            @onclick="HandleClick">
+        <span class="app-stepper__icon" aria-hidden="true">
+            <MudIcon Icon="@Icon" Color="Color.Inherit" />
+        </span>
+        <span class="@LabelClass">@Label</span>
+    </button>
+</li>
+
+@code {
+    [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
+
+    [Parameter, EditorRequired] public string Label { get; set; } = string.Empty;
+
+    /// See AppStepDefinition.AlwaysShowLabel (Components/AppStepDefinition.cs)
+    /// for why this exists — opts THIS step's label out of the icon-only
+    /// mobile treatment in responsive-rtl.css. Default false keeps every
+    /// step's markup byte-for-byte identical to before this parameter
+    /// existed.
+    [Parameter] public bool AlwaysShowLabel { get; set; }
+
+    [Parameter, EditorRequired] public AppStepState State { get; set; }
+
+    /// Fired for Pass/Selected/Active (every state except Disabled — the
+    /// native disabled attribute above already blocks the click for that
+    /// one, so no extra guard is needed here).
+    [Parameter] public EventCallback OnClick { get; set; }
+
+    private string LabelClass => AlwaysShowLabel
+        ? "app-stepper__label app-stepper__label--always-visible"
+        : "app-stepper__label";
+
+    private string ItemClass => State switch
+    {
+        AppStepState.Disabled => "app-stepper__btn app-stepper__btn--disabled",
+        AppStepState.Selected => "app-stepper__btn app-stepper__btn--selected",
+        AppStepState.Pass => "app-stepper__btn app-stepper__btn--pass",
+        AppStepState.Active => "app-stepper__btn app-stepper__btn--active",
+        _ => "app-stepper__btn",
+    };
+
+    private Task HandleClick() => OnClick.HasDelegate ? OnClick.InvokeAsync() : Task.CompletedTask;
+}

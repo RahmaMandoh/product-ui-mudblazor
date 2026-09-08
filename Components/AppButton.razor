@@ -1,0 +1,61 @@
+@* AppButton.razor — shared Primary Button (CLAUDE.md §3.1: used identically
+   by Screen A and Screen B), wraps MudButton with Variant.Filled +
+   Color.Primary, styled through styles/components.css's .app-btn-primary +
+   AppTheme.cs's Palette wiring — not a .razor.css, since this defines a new
+   reusable visual pattern (button colors/states), not one component's
+   internal markup wiring (CLAUDE.md §3.1).
+
+   Primary/Filled variant only for now — Secondary/Outlined/Text are out of
+   scope until Figma defines them (CLAUDE.md rule 7: don't invent).
+
+   Icon: MudButton 8.7.0 has no combined Icon+Adornment parameter — verified
+   against the installed MudBlazor.xml docs, it exposes separate StartIcon/
+   EndIcon (plus IconColor, defaulting to Color.Inherit, and IconSize,
+   defaulting to null i.e. "follow Size"). Icon/IconPosition below map onto
+   whichever of the two the consumer asks for; IconColor and IconSize are
+   deliberately left at MudButton's own defaults rather than set here:
+     - IconColor defaults to Color.Inherit, which already makes the icon
+       follow the button's own text color (--btn-pri-color-text per state) —
+       exactly "not an independently colored element", with no extra
+       parameter needed.
+     - IconSize defaults to null -> follows Size (Medium here), which
+       resolves to MudBlazor's own 1.5rem (24px) icon size — a 1.5:1 ratio
+       against --btn-pri-font-size (16px). That's MudBlazor's own built-in
+       Medium-button icon/text pairing, not a value invented for this
+       component; flag if Figma specifies a different explicit ratio. *@
+
+<MudButton Variant="Variant.Filled"
+           Color="Color.Primary"
+           Class="app-btn-primary"
+           Disabled="Disabled"
+           StartIcon="@(IconPosition == Adornment.Start ? Icon : null)"
+           EndIcon="@(IconPosition == Adornment.End ? Icon : null)"
+           OnClick="OnClick"
+           UserAttributes="@AdditionalAttributes">
+    @ChildContent
+</MudButton>
+
+@code {
+    /// Optional per-instance icon (e.g. Icons.Material.Filled.Sync). Null by
+    /// default: MudButton's own StartIcon/EndIcon render nothing and reserve
+    /// no layout gap when null (verified in MudBlazor 8.7.0 docs — "Defaults
+    /// to null"), so no extra empty-slot handling is needed here.
+    [Parameter] public string? Icon { get; set; }
+
+    /// Where Icon renders relative to the label. Only Start/End are
+    /// meaningful (mapped straight onto MudButton's StartIcon/EndIcon);
+    /// defaults to Start.
+    [Parameter] public Adornment IconPosition { get; set; } = Adornment.Start;
+
+    [Parameter] public bool Disabled { get; set; }
+
+    [Parameter] public EventCallback<MouseEventArgs> OnClick { get; set; }
+
+    [Parameter] public RenderFragment? ChildContent { get; set; }
+
+    /// Passed through to MudButton's own UserAttributes (MudComponentBase,
+    /// same mechanism AppField already uses for InputAttributes) — e.g.
+    /// aria-label for an icon-only button.
+    [Parameter(CaptureUnmatchedValues = true)]
+    public Dictionary<string, object>? AdditionalAttributes { get; set; }
+}

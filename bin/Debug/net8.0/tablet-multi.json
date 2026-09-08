@@ -1,0 +1,188 @@
+{
+  "601": {
+    "innerWidth": 601,
+    "htmlClientWidth": 601,
+    "htmlScrollWidth": 601,
+    "bodyScrollWidth": 601,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 569,
+      "width": 537
+    },
+    "dateFieldFirstChild": {
+      "left": 437.8,
+      "right": 551,
+      "width": 113.3
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 601,
+      "width": 601
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 601,
+      "width": 601
+    },
+    "hasHorizontalOverflow": false
+  },
+  "700": {
+    "innerWidth": 700,
+    "htmlClientWidth": 700,
+    "htmlScrollWidth": 700,
+    "bodyScrollWidth": 700,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 668,
+      "width": 636
+    },
+    "dateFieldFirstChild": {
+      "left": 512,
+      "right": 650,
+      "width": 138
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 700,
+      "width": 700
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 700,
+      "width": 700
+    },
+    "hasHorizontalOverflow": false
+  },
+  "768": {
+    "innerWidth": 768,
+    "htmlClientWidth": 768,
+    "htmlScrollWidth": 768,
+    "bodyScrollWidth": 768,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 736,
+      "width": 704
+    },
+    "dateFieldFirstChild": {
+      "left": 563,
+      "right": 718,
+      "width": 155
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 768,
+      "width": 768
+    },
+    "hasHorizontalOverflow": false
+  },
+  "820": {
+    "innerWidth": 820,
+    "htmlClientWidth": 820,
+    "htmlScrollWidth": 820,
+    "bodyScrollWidth": 820,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 788,
+      "width": 756
+    },
+    "dateFieldFirstChild": {
+      "left": 602,
+      "right": 770,
+      "width": 168
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 820,
+      "width": 820
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 820,
+      "width": 820
+    },
+    "hasHorizontalOverflow": false
+  },
+  "900": {
+    "innerWidth": 900,
+    "htmlClientWidth": 900,
+    "htmlScrollWidth": 900,
+    "bodyScrollWidth": 900,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 868,
+      "width": 836
+    },
+    "dateFieldFirstChild": {
+      "left": 662,
+      "right": 850,
+      "width": 188
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 900,
+      "width": 900
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 900,
+      "width": 900
+    },
+    "hasHorizontalOverflow": false
+  },
+  "959": {
+    "innerWidth": 959,
+    "htmlClientWidth": 959,
+    "htmlScrollWidth": 959,
+    "bodyScrollWidth": 959,
+    "pageDir": "rtl",
+    "rtlWrapperDirAttr": "rtl",
+    "rtlWrapperComputedDir": "rtl",
+    "filtersRow": {
+      "left": 32,
+      "right": 927,
+      "width": 895
+    },
+    "dateFieldFirstChild": {
+      "left": 706.3,
+      "right": 909,
+      "width": 202.8
+    },
+    "dateFieldClass": "app-field",
+    "contentScroll": {
+      "left": 0,
+      "right": 959,
+      "width": 959
+    },
+    "mainEl": {
+      "left": 0,
+      "right": 959,
+      "width": 959
+    },
+    "hasHorizontalOverflow": false
+  }
+}
