@@ -1,26 +1,36 @@
-﻿@inherits LayoutComponentBase
 @page "/"
+@inject NavigationManager Navigation
 
-<PageTitle>Home</PageTitle>
+<PageTitle>نظام التحكم</PageTitle>
 
+<MudStack Spacing="6" Class="pa-4">
+    <MudText Typo="Typo.h4">مرحباً بك في نظام التحكم</MudText>
 
-<AppField T="string" Label="الاسم" @bind-Value="_name" />
+    <div class="app-panel">
+        <div class="app-panel-header">
+            <p class="app-panel-header__title">
+                <MudIcon Icon="@Icons.Material.Outlined.CloudSync" Color="Color.Inherit" Class="app-panel-header__title-icon" />
+                حالة المزامنة
+            </p>
+        </div>
+        <p class="app-panel-text">متابعة حالة مزامنة البيانات وصحة خط المزامنة.</p>
+        <AppButton Icon="@Icons.Material.Filled.ChevronLeft" IconPosition="Adornment.End"
+                   OnClick="@(() => Navigation.NavigateTo("/demo/sync-status"))">
+            الانتقال إلى حالة المزامنة
+        </AppButton>
+    </div>
 
-<AppField T="string" Type="AppFieldType.Select" Label="اختر مركز"
-          Options="@(new List<string>{"القاهرة", "الجيزة", "الإسكندرية"})"
-          @bind-Value="_selected" />
-
-<AppField T="string" Type="AppFieldType.Date" Label="التاريخ"
-          @bind-DateValue="_date" />
-
-<AppField T="string" Label="الاسم" @bind-Value="_name2"
-          Error="true" ErrorText="الحقل مطلوب" />
-
-<AppButton Icon="@Icons.Material.Filled.Sync">بدء المزامنة</AppButton>
-
-@code {
-    private string? _name;
-    private string? _selected;
-    private DateTime? _date;
-    private string? _name2;
-}
+    <div class="app-panel">
+        <div class="app-panel-header">
+            <p class="app-panel-header__title">
+                <MudIcon Icon="@Icons.Material.Outlined.FileCopy" Color="Color.Inherit" Class="app-panel-header__title-icon" />
+                توزيع الأسئلة
+            </p>
+        </div>
+        <p class="app-panel-text">عرض قوالب توزيع الأسئلة على النماذج والوحدات.</p>
+        <AppButton Icon="@Icons.Material.Filled.ChevronLeft" IconPosition="Adornment.End"
+                   OnClick="@(() => Navigation.NavigateTo("/demo/question-distribution"))">
+            الانتقال إلى توزيع الأسئلة
+        </AppButton>
+    </div>
+</MudStack>
