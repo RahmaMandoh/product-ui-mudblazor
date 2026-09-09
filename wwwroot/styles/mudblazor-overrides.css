@@ -129,7 +129,13 @@
                  disabled-empty vs disabled-filled)
      Focused   — shared by all three Types, wins over Selected/FillOut
                  whenever focused, regardless of content
-     Selected  — Date ONLY, has a value, not focused (blue-accented)
+     Selected  — Date ONLY, has a value, not focused. Was blue-accented per
+                 the literal Figma Picker_Selected_* values; DECISION (see
+                 DECISIONS.md) repointed its tokens to the SAME gray as
+                 FillOut, so as-rendered this is now visually identical to
+                 FillOut below — kept as its own selector/class (not merged
+                 into FillOut's) since it's still a distinct state
+                 conceptually and the tokens.css split may be revisited.
      FillOut   — Text/Select ONLY, has a value, not focused (gray-accented)
      Error     — layers over whichever of the above is active
    Selected vs FillOut can't be told apart by MudBlazor's own classes alone
@@ -147,6 +153,37 @@
 .app-field-input .mud-input {
   min-height: var(--a11y-touch-target-min);
   box-sizing: border-box;
+}
+
+/* ---- Date field value alignment (dir="ltr" digit-order wrapper) ----
+   BUG FIX, CLAUDE.md §2/rule 1&2. Root cause CONFIRMED by reading the
+   shipped MudBlazor.min.css directly (grep for ".mud-input-slot{" — no rule
+   there sets text-align at all, in any state), so this is a genuinely
+   missing declaration, not a specificity fight — no !important needed.
+   demo/ScreenA/SyncStatus.razor passes dir="ltr" via InputAttributes purely
+   so the date's digits render left-to-right instead of being reordered by
+   the page's ambient RTL bidi algorithm (CLAUDE.md §2) — confirmed landing
+   on the innermost <input class="mud-input-slot ...">, see this file's own
+   DOM STRUCTURE note above. `dir` and `text-align` are independent: setting
+   `dir="ltr"` also sets this element's CSS `direction` to ltr, and
+   text-align's initial value (`start`) resolves against THAT element's OWN
+   direction when nothing overrides it — so the value was drifting to the
+   input's LEFT edge instead of sitting on the same side as
+   Select's/Text's values (those inputs carry no dir override, so their
+   inherited RTL direction resolves their own default `start` to the right).
+   Physical `right`, not a logical value, is deliberate — the one place in
+   this codebase that intentionally breaks from "use logical properties for
+   RTL" (responsive-rtl.css's own rule): `text-align: end` would resolve
+   against THIS element's own direction, which is ltr specifically because
+   we forced it that way for digit order — reusing that same reversed
+   direction to compute "end" would land back on the wrong (left) side. The
+   app itself is single-direction RTL only (MudRTLProvider set once,
+   CLAUDE.md §2), so hardcoded `right` is the stable, visually-correct
+   answer, not a guess. Scoped to `[dir="ltr"]` so this can never
+   accidentally fire on a future Date field usage that doesn't opt into the
+   digit-order wrapper. */
+.app-field-input--date .mud-input-slot[dir="ltr"] {
+  text-align: right;
 }
 
 /* ---- Default (empty, resting) ----
@@ -276,7 +313,14 @@
   opacity: 1; /* browsers default <input> placeholder to ~54% opacity of the color; Figma's value is the final color, not a tint of it */
 }
 
-/* ---- Selected (Date ONLY — has a value, not focused, blue-accented) ---- */
+/* ---- Selected (Date ONLY — has a value, not focused) ----
+   No longer blue-accented — tokens.css's --field-color-{stroke,label,icon}-
+   selected were repointed to the same raw Variables as FillOut's by a
+   deliberate product decision overriding the literal Figma
+   Picker_Selected_stroke/Labletxt values (see DECISIONS.md). This selector
+   block is unchanged/still fires; only the tokens it reads resolved to
+   different colors. Kept as its own rule (not merged with FillOut's below)
+   since Selected/FillOut remain conceptually distinct per-Type states. */
 .app-field-input--date .mud-input.mud-input-outlined.mud-shrink:not(:focus-within):not(.mud-disabled) {
   background-color: var(--field-color-bg-selected);
 }

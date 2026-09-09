@@ -1289,10 +1289,11 @@
   color: var(--qbank-color-subtitle);
 }
 
-/* Column 3's "تحديد الكل" / "نقل الكل" controls — plain static text this
-   pass (same "structure now, interaction later" scope as the menu icon and
-   drag handle), styled to match the reference's active-link vs.
-   muted/disabled-looking "نقل الكل" (nothing is selected yet). */
+/* "تحديد الكل" (static, out of this pass's scope) / "نقل المحدد" &
+   "إرجاع المحدد" (real "اختيار متعدد" transfer controls — CLAUDE.md §6,
+   see QuestionDistribution.razor's TransferCheckedToSectionOne/
+   ReturnCheckedToPool). Base typography shared by the static span and the
+   real <button>s below. */
 .app-qbank-column__link {
   color: var(--chip-color-text); /* same safe blue-1f link color already used elsewhere */
   font-family: var(--qbank-font-family);
@@ -1300,8 +1301,30 @@
   white-space: nowrap;
 }
 
-.app-qbank-column__link--muted {
+/* <button> reset so "نقل المحدد"/"إرجاع المحدد" keep the plain-text look
+   above instead of native button chrome, plus the shared focus-ring/
+   touch-target rules every other interactive element in this file uses.
+   Disabled (nothing checked yet) reuses the same muted color the old
+   static mockup hardcoded, now driven by real state instead of a class. */
+.app-qbank-column__link--action {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--a11y-touch-target-min);
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.app-qbank-column__link--action:disabled {
   color: var(--qbank-color-subtitle);
+  cursor: not-allowed;
+}
+
+.app-qbank-column__link--action:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring-color);
+  outline-offset: var(--focus-ring-offset);
 }
 
 /* CLAUDE.md §6 — never color/shape alone: the reference's empty columns

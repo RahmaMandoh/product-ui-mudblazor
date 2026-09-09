@@ -184,16 +184,37 @@
   --field-color-placeholder-focused: var(--color-black-00-50);
   --field-color-icon-focused: var(--color-blue-00);
 
-  /* Selected — 5 properties — Date ONLY, filled+resting. This is the ONE
-     state in this token family that genuinely IS Date-specific (unlike the
-     rest of the "Date Picker Field" group, which is really the base/shared
-     look) — the Selected-vs-FillOut split below is real and intentional,
-     not a naming artifact; don't fold it back into a shared state. */
+  /* Selected — 5 properties — Date ONLY, filled+resting.
+     DECISION, see DECISIONS.md "Date field Selected state — resting look
+     repointed to match FillOut (Figma override)": stroke/label/icon below
+     are no longer the literal Figma Picker_Selected_stroke/Labletxt blue
+     values — deliberately repointed so Date's resting "has a value" look
+     is visually IDENTICAL to Text/Select's FillOut (gray), not
+     blue-accented. Only Focused (below, unchanged) stays the one
+     blue-accented state, shared identically by all three Types. This is a
+     deliberate product decision overriding Figma, not a bug fix.
+     Repointed to the SAME raw Variable FillOut's own token already uses
+     (--color-gray-39-50 / --color-gray-39), not to `var(--field-color-*
+     -fillout)` itself — tokens.css's own convention is "Tokens reference
+     Variables, not other Tokens" (see this file's header; same resolution
+     already used for --panel-color-stroke re-deriving --sidebar-color-stroke's
+     Variable rather than referencing that Token directly). Resolved color
+     is byte-identical to FillOut's either way.
+     bg/placeholder CONFIRMED (not assumed) to already reference the exact
+     same raw Variables as FillOut's own bg/placeholder BEFORE this change
+     (--color-white-ff / --color-darkblue--15 respectively) — left as-is,
+     nothing to repoint there.
+     Original Figma-literal mapping kept below, commented out (not
+     deleted), for reference/Figma-history — revisit only if this decision
+     is revisited. */
   --field-color-bg-selected: var(--color-white-ff);
-  --field-color-stroke-selected: var(--color-blue-ba);
-  --field-color-label-selected: var(--color-blue-00);
+  /* --field-color-stroke-selected: var(--color-blue-ba); */ /* Picker_Selected_stroke, Figma-literal — superseded, see DECISIONS.md */
+  --field-color-stroke-selected: var(--color-gray-39-50); /* same raw Variable as --field-color-stroke-fillout, deliberately */
+  /* --field-color-label-selected: var(--color-blue-00); */ /* Picker_Selected_Labletxt, Figma-literal — superseded, see DECISIONS.md */
+  --field-color-label-selected: var(--color-gray-39); /* same raw Variable as --field-color-label-fillout, deliberately */
   --field-color-placeholder-selected: var(--color-darkblue--15);
-  --field-color-icon-selected: var(--color-blue-00);
+  /* --field-color-icon-selected: var(--color-blue-00); */ /* Figma-literal (aliased Labletxt) — superseded, see DECISIONS.md */
+  --field-color-icon-selected: var(--color-gray-39); /* same raw Variable as --field-color-icon-fillout, deliberately */
 
   /* FillOut — 5 properties — Text/Select ONLY, filled+resting. The other
      genuinely Type-specific half of the Selected/FillOut split above. */

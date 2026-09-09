@@ -104,6 +104,16 @@
    wins over both Selected and FillOut whenever the field has focus,
    regardless of Type, per the confirmed row-3/4/5 reading.
 
+   UPDATE (see DECISIONS.md): Selected's own colors were later repointed to
+   the same gray as FillOut by a deliberate product decision (uniform
+   resting look; only Focused stays blue-accented) — so despite the
+   "blue-accented" description above, Date's resting-filled look now
+   renders identical to FillOut's. The modifier class split itself is still
+   required (Selected/FillOut remain two separate selectors in
+   mudblazor-overrides.css, per-Type, even though they currently resolve to
+   the same tokens) — don't collapse TypeClass back to one shared value on
+   the assumption the colors matching means the states do too.
+
    ============================================================================
    Popups (calendar / autocomplete dropdown): still MudBlazor's default
    indigo/purple theme (screenshots 2 and 3) — not re-skinned, since no token
@@ -265,13 +275,17 @@
     private readonly string _errorId = $"app-field-error-{Guid.NewGuid():N}";
 
     /// Per-Type modifier class. Exists ONLY so mudblazor-overrides.css can
-    /// tell apart the two different "has a value, resting" looks Figma
-    /// actually specifies — Selected (blue-accented, Date only) vs FillOut
-    /// (gray-accented, Text/Select) — since both render through the same
-    /// .mud-shrink MudBlazor class and CSS has no other way to distinguish
-    /// them. Applied regardless of state (not just when filled) so the CSS
-    /// selectors stay simple compound selectors rather than needing this
-    /// class added/removed conditionally.
+    /// tell apart the two different "has a value, resting" looks — Selected
+    /// (Date only) vs FillOut (Text/Select) — since both render through the
+    /// same .mud-shrink MudBlazor class and CSS has no other way to
+    /// distinguish them. Applied regardless of state (not just when filled)
+    /// so the CSS selectors stay simple compound selectors rather than
+    /// needing this class added/removed conditionally.
+    /// NOTE: Selected originally read blue-accented per literal Figma
+    /// values; a later product decision (DECISIONS.md) repointed its tokens
+    /// to match FillOut's gray. The class split documented above still
+    /// exists and still matters for that reason alone, independent of
+    /// whatever colors the two states currently happen to share.
     private string TypeClass => Type switch
     {
         AppFieldType.Date => "app-field-input--date",

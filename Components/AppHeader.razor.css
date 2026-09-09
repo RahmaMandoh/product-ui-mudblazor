@@ -46,6 +46,13 @@
 .app-header-shell ::deep .app-header-bar {
   display: flex;
   align-items: center;
+  /* Figma pins this icon cluster to the edge AWAY from the sidebar (a large
+     gap sits between the sidebar and the cluster) — confirmed by pixel
+     comparison against TaskOne_from_figma_design.png, not assumed. Flex's
+     default `justify-content: flex-start` instead pinned it to this row's
+     own inline-start edge, which in this RTL context is the side adjacent
+     to the sidebar — the opposite of the reference. */
+  justify-content: flex-end;
   gap: var(--header-item-gap);
   padding-block: var(--header-padding-block);
   padding-inline: var(--header-padding-inline);

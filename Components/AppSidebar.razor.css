@@ -37,6 +37,7 @@
   flex-direction: column;
   gap: var(--sidebar-item-gap);
   width: var(--sidebar-width);
+  min-height: 100vh;
   padding-block: var(--sidebar-padding-block);
   padding-inline: var(--sidebar-padding-inline);
   font-family: var(--sidebar-font-family);

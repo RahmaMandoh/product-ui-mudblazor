@@ -78,6 +78,13 @@ a rule below, say so explicitly instead of silently picking one side.
     </MudLayout>
 </MudRTLProvider>
 ```
+> **Correction (verified against the installed MudBlazor 8.7.0 package):**
+> `MudThemeProvider` has no `RightToLeft` parameter in this version — only
+> `MudRTLProvider.RightToLeft` is set; `MudThemeProvider` picks up RTL via
+> the cascading value `MudRTLProvider` provides. See README.md's "RTL
+> setup" section for the actual, verified setup — don't follow the snippet
+> below literally.
+
 Both `MudThemeProvider.RightToLeft` and `MudRTLProvider.RightToLeft` must be
 set together and kept in sync — one drives MudBlazor's internal RTL-aware
 logic, the other actually sets the `dir` attribute on the DOM. Do not set

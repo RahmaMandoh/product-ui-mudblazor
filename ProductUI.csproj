@@ -12,4 +12,13 @@
     <PackageReference Include="MudBlazor" Version="8.7.0" />
   </ItemGroup>
 
+  <!-- Rebuilds wwwroot/dist/product-ui.min.css from wwwroot/styles/*.css
+       (CLAUDE.md §3/§4) before every build, so dotnet build/clean+rebuild
+       (CLAUDE.md §7) is the single source of truth for the compiled
+       bundle — see build-styles.ps1's own header for why dist/product-ui.min.css
+       itself is never hand-edited. -->
+  <Target Name="BuildStyles" BeforeTargets="Build">
+    <Exec Command="powershell -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\build-styles.ps1&quot;" />
+  </Target>
+
 </Project>

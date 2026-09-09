@@ -48,6 +48,7 @@
    via clicks instead, which is the correct behavior for a page that
    actually navigates rather than displaying one fixed screenshot. *@
 @page "/demo/question-distribution"
+@using System.Linq
 
 <PageTitle>Screen B — تقسيم الأسئلة / الوحدات (demo)</PageTitle>
 
@@ -301,34 +302,94 @@
            source image's compression (same "close enough to demonstrate the
            real pattern" precedent already used elsewhere in this file). *@
         <div class="app-qbank-columns">
-            <div class="app-qbank-column app-qbank-column--empty">
+            <div class="app-qbank-column @(_sectionTwoItems.Count == 0 ? "app-qbank-column--empty" : "app-qbank-column--populated")">
                 <div class="app-qbank-column__header">
                     <div class="app-qbank-column__title-group">
                         <h3 class="app-qbank-column__title">قسم الثاني</h3>
-                        <p class="app-qbank-column__subtitle">٠ السؤال/الأسئلة</p>
+                        <p class="app-qbank-column__subtitle">@_sectionTwoItems.Count السؤال/الأسئلة</p>
                     </div>
-                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                    @if (_sectionTwoItems.Count == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                    }
+                    else
+                    {
+                        <div class="app-panel-inline-row">
+                            <span class="app-qbank-column__link">تحديد الكل</span>
+                            <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
+                                    disabled="@(!_sectionTwoItems.Any(i => i.Checked))"
+                                    @onclick="@(() => ReturnCheckedToPool(_sectionTwoItems))">
+                                إرجاع المحدد «
+                            </button>
+                        </div>
+                    }
                 </div>
 
                 <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionTwo" ValueChanged="@(v => _searchSectionTwo = v)"
                           AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
 
-                <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+                @if (_sectionTwoItems.Count == 0)
+                {
+                    <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+                }
+                else
+                {
+                    <div class="app-qbank-column__list">
+                        @foreach (var item in _sectionTwoItems)
+                        {
+                            <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
+                                             SecondaryTagLabel="@item.SecondaryTagLabel"
+                                             Text="@item.Text"
+                                             Checked="@item.Checked"
+                                             CheckedChanged="@(v => item.Checked = v)" />
+                        }
+                    </div>
+                }
             </div>
 
-            <div class="app-qbank-column app-qbank-column--empty">
+            <div class="app-qbank-column @(_sectionOneItems.Count == 0 ? "app-qbank-column--empty" : "app-qbank-column--populated")">
                 <div class="app-qbank-column__header">
                     <div class="app-qbank-column__title-group">
                         <h3 class="app-qbank-column__title">قسم الاول</h3>
-                        <p class="app-qbank-column__subtitle">٠ السؤال/الأسئلة</p>
+                        <p class="app-qbank-column__subtitle">@_sectionOneItems.Count السؤال/الأسئلة</p>
                     </div>
-                    <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                    @if (_sectionOneItems.Count == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                    }
+                    else
+                    {
+                        <div class="app-panel-inline-row">
+                            <span class="app-qbank-column__link">تحديد الكل</span>
+                            <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
+                                    disabled="@(!_sectionOneItems.Any(i => i.Checked))"
+                                    @onclick="@(() => ReturnCheckedToPool(_sectionOneItems))">
+                                إرجاع المحدد «
+                            </button>
+                        </div>
+                    }
                 </div>
 
                 <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionOne" ValueChanged="@(v => _searchSectionOne = v)"
                           AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
 
-                <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+                @if (_sectionOneItems.Count == 0)
+                {
+                    <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+                }
+                else
+                {
+                    <div class="app-qbank-column__list">
+                        @foreach (var item in _sectionOneItems)
+                        {
+                            <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
+                                             SecondaryTagLabel="@item.SecondaryTagLabel"
+                                             Text="@item.Text"
+                                             Checked="@item.Checked"
+                                             CheckedChanged="@(v => item.Checked = v)" />
+                        }
+                    </div>
+                }
             </div>
 
             <div class="app-qbank-column app-qbank-column--populated">
@@ -339,23 +400,34 @@
                     </div>
                     <div class="app-panel-inline-row">
                         <span class="app-qbank-column__link">تحديد الكل</span>
-                        <span class="app-qbank-column__link app-qbank-column__link--muted">نقل الكل »</span>
+                        <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
+                                disabled="@(!_questionBankItems.Any(i => i.Checked))"
+                                @onclick="TransferCheckedToSectionOne">
+                            نقل المحدد »
+                        </button>
                     </div>
                 </div>
 
                 <AppField T="string" Type="AppFieldType.Text" Label="ابحث بنص السؤال" Value="@_searchQuestionBank" ValueChanged="@(v => _searchQuestionBank = v)"
                           AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
 
-                <div class="app-qbank-column__list">
-                    @foreach (var item in _questionBankItems)
-                    {
-                        <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
-                                         SecondaryTagLabel="@item.SecondaryTagLabel"
-                                         Text="@item.Text"
-                                         Checked="@item.Checked"
-                                         CheckedChanged="@(v => item.Checked = v)" />
-                    }
-                </div>
+                @if (_questionBankItems.Count == 0)
+                {
+                    <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
+                }
+                else
+                {
+                    <div class="app-qbank-column__list">
+                        @foreach (var item in _questionBankItems)
+                        {
+                            <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
+                                             SecondaryTagLabel="@item.SecondaryTagLabel"
+                                             Text="@item.Text"
+                                             Checked="@item.Checked"
+                                             CheckedChanged="@(v => item.Checked = v)" />
+                        }
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -455,6 +527,16 @@
         },
     };
 
+    // "اختيار متعدد" (multi-select) transfer targets — start empty, same
+    // status as the columns' own pre-existing mock state. Both columns use
+    // the identical generic pattern (header switches "..." menu ->
+    // تحديد الكل/إرجاع المحدد once Count > 0, see markup) so either could
+    // hold items if a later pass wires "إضافة قسم جديد" to add more
+    // sections; only _sectionOneItems is currently a transfer TARGET (see
+    // TransferCheckedToSectionOne's own comment for why).
+    private readonly List<MockQuestionBankItem> _sectionOneItems = new();
+    private readonly List<MockQuestionBankItem> _sectionTwoItems = new();
+
     // Mutable (not a record) — AppQuestionCard's CheckedChanged needs
     // somewhere to write the new value back to for the checkbox to actually
     // reflect a toggle.
@@ -464,5 +546,51 @@
         public string? SecondaryTagLabel { get; init; }
         public string? Text { get; init; }
         public bool Checked { get; set; }
+    }
+
+    // "نقل المحدد" — the real "اختيار متعدد" transfer logic (CLAUDE.md §6:
+    // this screen's core function needs to actually work, not just look
+    // right; drag-and-drop stays a visual mockup, see DECISIONS.md).
+    //
+    // TARGET SECTION — FLAGGED ASSUMPTION, not read off a reference that
+    // shows it: UI_ UX 2.jpeg's two section columns ("قسم الاول"/"قسم
+    // الثاني") are both plain empty dashed placeholders with no selected/
+    // focused/highlighted state, no radio, no "active section" affordance
+    // of any kind — there is no explicit target-section selector in this
+    // design. Per instruction not to invent one, this always targets
+    // _sectionOneItems ("قسم الاول" — "the FIRST section", literally named
+    // that), the "first empty/active section" reading the task allowed as
+    // the fallback when no selector exists. _sectionTwoItems is never a
+    // transfer target under this logic — flag if round-robin/fill-first-
+    // then-next behavior across both sections was actually intended.
+    private void TransferCheckedToSectionOne()
+    {
+        var toMove = _questionBankItems.Where(i => i.Checked).ToList();
+        foreach (var item in toMove)
+        {
+            _questionBankItems.Remove(item);
+            item.Checked = false;
+            _sectionOneItems.Add(item);
+        }
+    }
+
+    // Requirement 4's "remove back to pool" affordance. FLAGGED ASSUMPTION:
+    // the reference never shows a populated section column (both are empty
+    // placeholders), so there's nothing to confirm a remove affordance
+    // against. Rather than inventing a new interaction, this mirrors the
+    // ALREADY-confirmed pool-column pattern (checkbox + a "تحديد
+    // الكل"/action-link header) onto section columns once they hold items —
+    // the same header-controls-differ-by-populated-state rule this file's
+    // own comment already documents for column 3 vs. columns 1/2, applied
+    // symmetrically rather than left as column-3-only.
+    private void ReturnCheckedToPool(List<MockQuestionBankItem> section)
+    {
+        var toMove = section.Where(i => i.Checked).ToList();
+        foreach (var item in toMove)
+        {
+            section.Remove(item);
+            item.Checked = false;
+            _questionBankItems.Add(item);
+        }
     }
 }
