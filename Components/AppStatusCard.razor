@@ -1,116 +1,9 @@
-@* Components/AppStatusCard.razor — shared status card (CLAUDE.md §3.1). Used
-   by BOTH card rows on Screen A (the 3-card row under the sync-action
-   buttons, and the 4-card "صحة خط المزامنة" row below it) — one component,
-   not two, since both rows render the identical card anatomy with only the
-   content differing. Confirmed against the Figma reference before coding:
-     1. Header row — title text one side, a small dark rounded icon badge
-        (per-card icon, passed in, never hardcoded) on the other.
-     2. A horizontal divider.
-     3. Ring (percentage inside) + status label + optional meta rows below.
-
-   Container: Bordered (new parameter, default true) controls whether this
-   card supplies its own .app-panel border/background. Two real call sites,
-   two different answers, both confirmed against the Figma reference:
-     - The 4-card "صحة خط المزامنة" row: Bordered="true" (default) — each
-       card keeps its own individually-bordered/gapped look, unchanged from
-       how this component was originally built.
-     - The 3-card CBT row: Bordered="false" — that row is now nested inside
-       .app-sync-block (components.css), ONE shared .app-panel spanning both
-       the sync-action banners above it AND this card row, separated by
-       divider LINES (border-inline-end/border-block-end) rather than
-       per-card borders. See components.css's "Sync-actions block" section
-       for the full reasoning — this replaced an earlier, incorrect
-       two-separate-panels reading of the same reference.
-   Below 600px both call sites revert to individually-boxed stacked cards
-   regardless of Bordered (components.css's mobile block forces the panel
-   look back on), matching TaskOne_Mobile.png. Only NEW classes here are
-   this component's own internal layout (header/divider/body/meta), which is
-   the reusable pattern itself (this component IS the shared visual pattern,
-   per §3.1's rule of thumb), so it lives in styles/components.css, not a
-   .razor.css.
-
-   ============================================================================
-   STATUS COLOR MAPPING — confirmed by comparing ring colors across cards,
-   not assumed from status-label text alone
-   ============================================================================
-   The Figma reference uses the SAME label text ("تمت") on two different
-   cards with two visibly DIFFERENT ring colors: 80% dark-navy/teal, and a
-   separate 100% card in green. That rules out deriving color purely from
-   StatusLabel string-matching — StatusType and StatusLabel are kept as two
-   independent parameters specifically so a consumer can pair e.g.
-   StatusType="AppStatusType.Info" with StatusLabel="تمت" on one card and
-   StatusType="AppStatusType.Success" with StatusLabel="تمت" (or "ناجح") on
-   another, exactly matching what the reference actually shows.
-   Mapping used (tokens.css, new --status-* tokens):
-     Success (100%, "تمت"/"ناجح")            → green  (--status-color-success)
-     Info    (80%/"تمت", 62%/"قيد التشغيل")   → dark navy/teal (--status-color-info)
-     Warning (74%, "جزئي")                    → orange (--status-color-warning)
-     Neutral (0%, "لا يوجد")                  → gray   (--status-color-neutral)
-   FLAGGED, not pixel-sampled: the exact ring hues above are read visually off
-   the pasted screenshot (no Figma color/hex export available in this
-   conversation), so --status-color-info in particular is a best-match to an
-   EXISTING token (--color-gray-39, already used for sidebar/icon dark
-   accents) rather than a new value confirmed against a real swatch — revisit
-   if exact Figma hex values surface later.
-
-   ============================================================================
-   MudProgressCircular — verified against installed MudBlazor 8.7.0
-   ============================================================================
-   Checked MudBlazor.xml directly (not assumed): Value/Min/Max (doubles,
-   Min/Max default 0/100 — a plain int percent maps straight onto Value with
-   no extra scaling), Color (theme enum), StrokeWidth, ChildContent
-   ("RenderFragment for rendering custom content" — MudBlazor's own
-   documented mechanism for the percentage-in-ring pattern used here, not a
-   custom absolute-positioned span). Color is deliberately left at
-   Color.Default (no MudBlazor theme-color class fighting our own tokens) —
-   the actual ring stroke color is themed entirely via mudblazor-overrides.css
-   against MudProgressCircular's real rendered SVG classes, confirmed via a
-   built/rendered DOM check (see that file's header comment for the exact
-   structure found), per CLAUDE.md rule 1.
-
-   ============================================================================
-   MetaRows API — plain List<(string Label, string Value)>, not RenderFragment
-   ============================================================================
-   Considered a RenderFragment for the meta section instead, but every card
-   in the reference — all 7 of them — needs nothing more than plain
-   "label: value" text pairs; none show an icon, link, or any richer markup
-   inside a meta row. A RenderFragment would just mean every call site
-   hand-writes the same <p><span>label</span><span dir="ltr">value</span></p>
-   markup instead of a plain tuple list, for no actual flexibility gained
-   today (CLAUDE.md: don't build for hypothetical future needs). Kept as a
-   tuple list; revisit only if a future meta row genuinely needs non-text
-   content. Defaults to an empty list (not null) — 3 of the 7 real cards
-   (الإقرارات/التوزيع/المعالجة المركزية) have NO meta rows at all in the
-   reference, just header+ring+status, so the empty-list case is a real,
-   exercised path, not just a defensive default.
-
-   Value is ALWAYS rendered in its own dir="ltr" span, separate from Label —
-   not one combined "label: value" string. A combined string would rely on
-   the browser's bidi algorithm to correctly re-order an embedded numeral run
-   from context alone, which does work when a strong-RTL label sits directly
-   in the same text node, but silently breaks for a value with no adjoining
-   label in that line (e.g. a bare date on its own row) — exactly the bug
-   CLAUDE.md §2 calls out. Splitting Label/Value into two spans and pinning
-   dir="ltr" on the value one is the safe, uniform fix for both cases at
-   once, not just the risky one.
-
-   ============================================================================
-   Accessibility (CLAUDE.md §6, per your explicit scoping for this card)
-   ============================================================================
-   - The percentage is already real visible text inside the ring
-     (MudProgressCircular's ChildContent), not color-only — kept.
-   - The ring's OUTER wrapper carries role="img" + a full aria-label
-     ("الحالة: <StatusLabel> <percent>%") so a screen reader gets one
-     coherent description instead of just announcing the bare "62%" text
-     node; the MudProgressCircular itself and its ChildContent are marked
-     aria-hidden so the composed label isn't announced twice.
-   - The adjacent status-label text (already present in the Figma, kept
-     as-is) continues to pair a real status WORD with the ring's color, for
-     every card — never a colored ring alone.
-   - No extra status icon is added next to StatusLabel beyond what the
-     reference shows: you scoped this card's a11y ask to the ring's
-     aria-label + keeping the existing text pairing, not to inventing a new
-     icon the Figma reference doesn't have. *@
+@* One shared status card, used by both card rows on Screen A. Bordered
+   defaults true; the 3-card row passes false, sharing one panel with the
+   sync banners — see .app-sync-block in components.css. StatusType and
+   StatusLabel are separate params since the reference reuses one label
+   text with different ring colors. Each value gets its own dir="ltr"
+   span so it isn't reordered by the page's RTL direction. *@
 
 <div class="@RootClass">
     <div class="app-status-card__header">
@@ -118,43 +11,22 @@
             <MudIcon Icon="@Icon" Color="Color.Inherit" Size="Size.Medium" />
         </span>
         <span class="app-status-card__title">@Title</span>
-        @* Icon bumped Size.Small -> Size.Large this pass, following on from
-           --status-card-badge-size growing 32px -> 56px (tokens.css,
-           visually recalibrated against the Figma reference): Size.Small
-           (~20px, MudBlazor's shipped CSS) inside a 56px circle would leave
-           the glyph looking lost/undersized relative to the old 32px-circle/
-           20px-icon ratio (~62%). Size.Large (~36px) restores a comparable
-           ~64% fill ratio — not itself pixel-measured against the
-           reference, a proportion-preserving follow-on from the badge
-           change, flagged as such rather than presented as independently
-           traced. *@
-        
+        @* Size.Large, not the default — the badge circle grew to 56px and
+           the smaller icon looked lost inside it. *@
     </div>
 
     <hr class="app-status-card__divider" />
 
     <div class="app-status-card__body">
-        @* Layout revised this pass: status label + ring now share one row
-           (previously: ring in its own column spanning the full body
-           height, meta stacked beside it). Re-confirmed against
-           TaskOne_from_figma_design.png by pixel position, not assumed: on
-           every one of the 7 real cards the ring sits at the visual LEFT
-           edge and the status label at the visual RIGHT, same row. In an
-           RTL flex row the first DOM child renders at the right
-           (inline-start), so the status label is written FIRST and the
-           ring SECOND to land ring-left/label-right — the opposite of what
-           "ring first, it's visually left-most" would naively suggest. *@
+        @* Label written first, ring second, so under RTL the ring lands
+           visually left and the label right — matching the reference. *@
         <div class="app-status-card__status-row">
             <p class="app-status-card__status-label">
                 <span>الحالة:</span> <span>@StatusLabel</span>
             </p>
 
             <div class="app-status-card__ring" role="img" aria-label="@AccessibleRingLabel">
-                @* Size.Large left UNCHANGED — measured against the reference
-                   this pass (canvas pixel-scan, TaskOne_from_figma_design.png,
-                   1920px width): reference ring outer diameter ~54px vs this
-                   component's rendered ~56px at the same viewport width, close
-                   enough that no change is warranted. *@
+                @* Size.Large matches the reference's ~54px ring closely enough. *@
                 <MudProgressCircular Value="@ProgressPercent"
                                       Color="Color.Default"
                                       Size="Size.Large"
@@ -165,18 +37,14 @@
             </div>
         </div>
 
-        @* Remaining MetaRows now render as a 2-column grid below the status
-           row (previously: one per line). Guarded by Count > 0 so the 3 of
-           7 real cards with no MetaRows don't emit an empty grid container. *@
+        @* Guarded so cards with no meta rows don't emit an empty grid. *@
         @if (MetaRows.Count > 0)
         {
             <div class="app-status-card__meta">
                 @foreach (var row in MetaRows)
                 {
                     <p class="app-status-card__meta-row">
-                        @* Empty Label (e.g. the unlabeled time half of a
-                           split date/time pair) must not print a dangling
-                           ":" with nothing before it. *@
+                        @* Skip empty labels so a bare ":" doesn't print alone. *@
                         @if (!string.IsNullOrEmpty(row.Label))
                         {
                             <span class="app-status-card__meta-label">@row.Label:</span>
@@ -192,8 +60,7 @@
 @code {
     [Parameter, EditorRequired] public string Title { get; set; } = string.Empty;
 
-    /// e.g. Icons.Material.Filled.People — one per card, passed in by the
-    /// consumer, never hardcoded here (same convention as AppButton.Icon).
+    /// e.g. Icons.Material.Filled.People — set per card by the consumer.
     [Parameter, EditorRequired] public string Icon { get; set; } = string.Empty;
 
     [Parameter] public int ProgressPercent { get; set; }
@@ -202,29 +69,20 @@
 
     [Parameter, EditorRequired] public string StatusLabel { get; set; } = string.Empty;
 
-    /// See the MetaRows API note above for why this is a plain tuple list,
-    /// not a RenderFragment. Empty by default — genuinely exercised: 3 of
-    /// the 7 real cards on this screen pass none.
+    /// Plain list of pairs, not a RenderFragment — see header comment.
     [Parameter] public List<(string Label, string Value)> MetaRows { get; set; } = new();
 
-    /// Default true: this card supplies its own .app-panel border/background
-    /// (the 4-card "صحة خط المزامنة" row). Pass false when the card is
-    /// embedded inside a shared parent panel that already draws the border
-    /// and handles separation via divider lines instead (the 3-card CBT
-    /// row inside .app-sync-block) — see the container comment above.
+    /// True (default) draws this card's own border — see header comment.
     [Parameter] public bool Bordered { get; set; } = true;
 
     private string RootClass => Bordered ? "app-panel app-status-card" : "app-status-card";
 
     private static readonly Dictionary<string, object> _ringHiddenAttributes = new() { ["aria-hidden"] = "true" };
 
-    // The status-LABEL text is deliberately NOT color-varied by StatusType —
-    // see tokens.css's --status-card-color-status-label note: three of the
-    // four raw --status-color-* hues fail 4.5:1 as text. Only the ring below
-    // carries the per-status color.
+    // Status label text stays a fixed color regardless of StatusType —
+    // three of the four status colors fail contrast as text.
 
-    // Named "-circular" (not just "app-status-card__ring", already used by
-    // the wrapping role="img" div above) so the two never collide in CSS.
+    // Named "-circular" to avoid colliding with "app-status-card__ring" above.
     private string RingClass => StatusType switch
     {
         AppStatusType.Success => "app-status-card__ring-circular app-status-card__ring-circular--success",

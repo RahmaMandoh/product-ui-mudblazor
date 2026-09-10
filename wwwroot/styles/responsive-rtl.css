@@ -1,24 +1,9 @@
 /* responsive-rtl.css — RTL-aware rules using logical CSS properties
    (inline-start/end, not left/right). */
 
-/* ==========================================================================
-   Stepper (AppStepper) — mobile: icon-only, no visible label.
-   Real measurement, not a guess (CLAUDE.md rule 1) — pixel-scanned
-   demo/ScreenB/TaskTwo_Mobile.png (the actual mobile export of the screen
-   that uses this stepper) against the 1920px desktop reference: the icon
-   circle itself measures 40x40px in BOTH, no size reduction (see
-   tokens.css's --stepper-icon-size note) — only the label disappears below
-   this breakpoint. --breakpoint-sm (600px), same threshold already used for
-   AppHeader's own sync-button label collapse (tokens.css).
-
-   Same clip-based visually-hidden technique already established in
-   AppHeader.razor.css for that exact same problem (label hidden by
-   breakpoint, kept in the accessibility tree) — reused here rather than
-   reinvented, since Bootstrap's own .visually-hidden class can't be applied
-   conditionally by breakpoint from CSS alone. This is the ONLY place
-   AppStepItem's label is ever visually hidden; the label text itself is
-   always rendered (CLAUDE.md §6 — a step's meaning must not be lost when
-   its label disappears from view). */
+/* Stepper (AppStepper) — icon-only on mobile below 600px. Same
+   clip-based hidden technique as AppHeader's sync label — visually gone,
+   still read by screen readers. */
 @media (max-width: 599.98px) {
   .app-stepper__label {
     position: absolute;
@@ -32,15 +17,8 @@
     border: 0;
   }
 
-  /* Exception: AppStepDefinition.AlwaysShowLabel (Components/AppStepDefinition.cs)
-     opts ONE step out of the icon-only rule above — confirmed against
-     demo/ScreenB/TaskTwo_Mobile.png, which keeps "ملخص الاختبار" labeled
-     while every other step goes icon-only (intentional per your
-     confirmation, not an export artifact). Every property the rule above
-     sets is explicitly reset back to normal in-flow text here, rather than
-     `all: revert`, since `position` in particular must land on the
-     icon-only layout's own static flow, not on some earlier inherited
-     absolute value. */
+  /* One step keeps its label, per the mobile reference — reset explicitly
+     rather than `all: revert` so `position` lands on normal flow. */
   .app-stepper__label--always-visible {
     position: static;
     width: auto;

@@ -1,37 +1,11 @@
-/* AppSidebar.razor.css — CSS isolation per CLAUDE.md §3.1.
+/* Sidebar's own MudBlazor wiring (MudNavMenu/NavLink/NavGroup). Targets
+   MudBlazor 8.7.0's nav menu classes, checked against shipped source, not
+   guessed — not a stable public API. Every rule anchors to
+   ".app-sidebar-shell" before "::deep" — required, since Blazor's scoped
+   CSS never attaches to a component tag like <MudNavMenu>; without a real
+   element before it, "::deep" has nothing to anchor to. */
 
-   Component-internal MudBlazor wiring for AppSidebar / SidebarItem /
-   SidebarParentItem (MudNavMenu, MudNavLink, MudNavGroup). Every value is
-   var(--sidebar-*) from wwwroot/styles/tokens.css — no hardcoded
-   color/size, per CLAUDE.md §3.1 and §4.
-
-   Targets MudBlazor 8.7.0's NavMenu component family. Verified against the
-   actual shipped source at tag v8.7.0 (not guessed, per CLAUDE.md rule 1):
-     - src/MudBlazor/Components/NavMenu/MudNavMenu.razor(.cs)
-     - src/MudBlazor/Components/NavMenu/MudNavLink.razor(.cs)
-     - src/MudBlazor/Components/NavMenu/MudNavGroup.razor(.cs)
-     - src/MudBlazor/Styles/components/_navmenu.scss
-   Class names are not a stable public API and may change in a future
-   MudBlazor version — re-verify against source before bumping versions.
-
-   Every rule below is anchored to ".app-sidebar-shell" (the wrapping <div>
-   in AppSidebar.razor) before "::deep". This is required, not stylistic:
-   Blazor's scoped-CSS attribute only ever attaches to a raw HTML element
-   written directly in this .razor file, never to a component tag like
-   <MudNavMenu> — a bare leading "::deep .foo" (no real element before it)
-   has no scope anchor to attach to and cannot match anything, confirmed by
-   actually running the app (every rule silently no-opped until the shell
-   div + this prefix were added). Per the docs' own example: "div ::deep >
-   a" compiles to "div[b-{SCOPE}] > a" — the scope attribute lands on the
-   real element before ::deep, and everything after it is left unscoped so
-   it can reach into child components' rendered output.
-   https://learn.microsoft.com/aspnet/core/blazor/components/css-isolation */
-
-/* ---- Sidebar container: only the ROOT MudNavMenu carries this class
-   (AppSidebar.razor sets Class="app-sidebar-root" on it) — the *nested*
-   MudNavMenu that MudNavGroup renders internally for a group's children
-   does not get it, so this never double-applies width/padding to nested
-   menus. ---- */
+/* Only the root MudNavMenu carries this class, not a nested group's own. */
 .app-sidebar-shell ::deep .app-sidebar-root {
   display: flex;
   flex-direction: column;
@@ -45,17 +19,8 @@
   box-sizing: border-box;
 }
 
-/* ---- Base link (regular item + child item + parent header button all
-   render class "mud-nav-link", so one rule covers all three) ----
-   Beats MudBlazor's own `.mud-nav-link { padding: 8px 16px 8px 16px; color: inherit; }`
-   (_navmenu.scss) — our own ".app-sidebar-shell[b-xxx]" ancestor prefix
-   already gives this strictly higher specificity than MudBlazor's rule
-   regardless of load order, on top of loading later per CLAUDE.md §1.4.
-   Nested children still get MudBlazor's own deeper indentation
-   (`.mud-nav-group * .mud-navmenu .mud-nav-item .mud-nav-link { padding-inline-start: 36px; }`)
-   only where that rule is MORE specific than this one — left as-is since
-   it's already RTL-safe (logical properties) and no indentation token was
-   given to replace it. */
+/* Base link — regular item, child item, and parent header all share the
+   "mud-nav-link" class, so one rule covers all three. */
 .app-sidebar-shell ::deep .mud-nav-link {
   color: var(--sidebar-color-text-default);
   background-color: transparent;
@@ -64,12 +29,7 @@
   box-sizing: border-box;
 }
 
-/* Text weight (default). MudBlazor's own _navmenu.scss unconditionally
-   bolds a top-level group header's own text via
-   `.mud-nav-group > .mud-nav-link > .mud-nav-link-text { font-weight: 500; }`
-   — overridden here (our ancestor prefix makes this the more specific
-   rule). Also covers plain item text, which has no competing MudBlazor
-   rule at all. */
+/* MudBlazor always bolds a group header's own text — overridden here. */
 .app-sidebar-shell ::deep .mud-nav-item > .mud-nav-link > .mud-nav-link-text,
 .app-sidebar-shell ::deep .mud-nav-group > .mud-nav-link > .mud-nav-link-text {
   font-weight: var(--sidebar-font-weight-regular);
@@ -79,29 +39,19 @@
   font-size: var(--sidebar-font-size);
 }
 
-/* Nested child items render inside a MudNavGroup's MudCollapse
-   (Class="mud-navgroup-collapse", confirmed in MudNavGroup.razor), which
-   only ever wraps a group's children, never the header itself — so this
-   never affects a parent header's own text size. */
+/* Nested items render inside the group's own collapsible wrapper, so
+   this never affects the header's own text size. */
 .app-sidebar-shell ::deep .mud-navgroup-collapse .mud-nav-link-text {
   font-size: var(--sidebar-font-size-child);
 }
 
-/* Expand arrow (MudNavGroup's ExpandIcon). MudBlazor hardcodes its color
-   unconditionally via `.mud-nav-link { & .mud-nav-link-expand-icon { color: var(--mud-palette-drawer-icon); } } }`
-   (_navmenu.scss). There is no ExpandIconColor parameter to pass
-   Color.Inherit to (verified: MudNavGroup only exposes `IconColor`, which
-   affects its own `Icon`, not `ExpandIcon`) — so the arrow's color must be
-   overridden here directly. */
+/* Expand arrow color — no ExpandIconColor parameter exists, so this has
+   to be overridden directly. */
 .app-sidebar-shell ::deep .mud-nav-link .mud-nav-link-expand-icon {
   color: var(--sidebar-color-text-default);
 }
 
-/* ---- Hover: regular item, child item, and closed parent header (all
-   share class "mud-nav-link") ----
-   Overrides MudBlazor's own `.mud-nav-link:hover:not(.mud-nav-link-disabled)`
-   (_navmenu.scss, inside @media(hover:hover)). Also covers keyboard focus
-   the same way, satisfying CLAUDE.md §6's visible-focus-state requirement. */
+/* Hover — also covers keyboard focus, so there's always a visible state. */
 .app-sidebar-shell ::deep .mud-nav-link:hover:not(.mud-nav-link-disabled),
 .app-sidebar-shell ::deep .mud-nav-link:focus-visible:not(.mud-nav-link-disabled) {
   background-color: var(--sidebar-color-bg-hover);
@@ -113,30 +63,15 @@
   color: var(--sidebar-color-text-hover);
 }
 
-/* ---- Active / selected (regular + child items only — MudNavGroup's own
-   header button never receives the "active" class; that's purely a
-   MudNavLink/NavLink routing concept) ----
-   MudNavMenu defaults Color to Color.Default, rendering class
-   "mud-navmenu-default", which ships its own active-state rule:
-   `.mud-navmenu.mud-navmenu-default .mud-nav-link.active:not(.mud-nav-link-disabled) { color: ...; background-color: ...; }`
-   — overridden here. This applies equally to nested children, since the
-   MudNavMenu rendered *inside* a group's collapse is a genuine separate
-   MudNavMenu instance with the same default classes — so a selected child
-   gets this regardless of whether its parent is open, independent of the
-   parent-expanded shared fill below. */
+/* Active/selected — regular and child links only; a parent header button
+   never gets the "active" class. */
 .app-sidebar-shell ::deep .mud-navmenu.mud-navmenu-default .mud-nav-link.active:not(.mud-nav-link-disabled) {
   background-color: var(--sidebar-color-bg-active);
   color: var(--sidebar-color-text-active);
 }
 
-/* Active text weight must be re-declared directly on .mud-nav-link-text:
-   our own default rule above already puts an explicit font-weight directly
-   on that element (needed to beat MudBlazor's unconditional group-header
-   bolding), and a direct declaration on an element always wins over
-   whatever it would otherwise inherit from its ancestor .mud-nav-link —
-   including MudBlazor's own `.mud-nav-link.active { font-weight: 500 !important; }`,
-   which only competes for .mud-nav-link's *own* font-weight, not a
-   descendant's — so no !important is needed here either. */
+/* Needs its own declaration — a direct rule always wins over inherited
+   values, including MudBlazor's !important one on the parent element. */
 .app-sidebar-shell ::deep .mud-nav-item > .mud-nav-link.active > .mud-nav-link-text {
   font-weight: var(--sidebar-font-weight-active);
 }
@@ -145,22 +80,11 @@
   color: var(--sidebar-color-text-active);
 }
 
-/* ---- Parent group expanded: header row + every nested child row sit
-   inside ONE continuous background fill; only the header's own
-   text/icon/arrow recolor to the hover token. Selected nested children
-   keep their own independent active state (painted on top of the shared
-   fill by the active rule above), unaffected by the parent being open. ----
-   SidebarParentItem.razor mirrors MudNavGroup's real Expanded state via
-   @bind-Expanded into this "sidebar-parent-expanded" class (passed through
-   MudNavGroup's own Class parameter, which lands on its root <nav
-   class="mud-nav-group ...">) rather than a CSS :has() selector — keeps
-   this independent of :has() browser support and trivially inspectable in
-   the rendered DOM.
-
-   Placed after the hover rules above so it wins the specificity tie
-   between them when a header is hovered while expanded — required so an
-   expanded header never shows its own separate hover-tinted background
-   patch, only the shared fill. */
+/* Parent group expanded: header + nested rows share one continuous fill;
+   selected children keep their own active state on top of it.
+   SidebarParentItem.razor mirrors expanded state into this class
+   directly, rather than :has(). Placed after hover so it wins the tie
+   when an expanded header is hovered. */
 .app-sidebar-shell ::deep .mud-nav-group.sidebar-parent-expanded {
   background-color: var(--sidebar-color-bg-active-parent);
   border-radius: var(--sidebar-radius);
@@ -182,12 +106,7 @@
   }
 }
 
-/* ---- Responsive drawer (Task 3) ----
-   MudBlazor 8.7.0's own compiled CSS reads width from a custom property:
-   `.mud-drawer-pos-right{width:var(--mud-drawer-width, var(--mud-drawer-width-right))}`
-   (confirmed by reading the shipped MudBlazor.min.css, not guessed) — so
-   setting --mud-drawer-width here overrides it directly with no specificity
-   fight and no !important (CLAUDE.md rule 3). */
+/* MudBlazor reads drawer width from this custom property directly. */
 .app-sidebar-shell ::deep .mud-drawer.app-sidebar-drawer {
   --mud-drawer-width: var(--sidebar-width);
 }
@@ -198,11 +117,7 @@
   }
 }
 
-/* Explicit mobile-overlay close button — see the razor file's comment on
-   why tap-outside/OverlayAutoClose doesn't work here. Reuses the header's
-   icon-button color token since it's the same visual role (a plain icon
-   button), not a sidebar-nav-link. Hidden at/above the desktop breakpoint,
-   same threshold as AppHeader's hamburger. */
+/* Mobile-overlay close button — see the .razor file for why it's needed. */
 .app-sidebar-shell ::deep .app-sidebar-close-btn {
   align-self: flex-end;
   color: var(--sidebar-color-text-default);

@@ -1,62 +1,8 @@
-@* AppToggleGroup.razor — shared reusable two-(or-more)-option segmented
-   control (CLAUDE.md §3.1), used by Screen B's "توزيع الأسئلة" mode switch
-   (اختيار متعدد / سحب وإملاء) and any future mutually-exclusive choice.
-
-   ============================================================================
-   BUILT CUSTOM, NOT WRAPPING MudToggleGroup<T> — VERIFIED, NOT GUESSED
-   ============================================================================
-   MudBlazor 8.7.0 does ship MudToggleGroup<T>/MudToggleItem<T> (confirmed in
-   the installed MudBlazor.xml), and its SelectionMode.SingleSelection visual
-   look is exactly right (filled-primary for the selected item, outlined-
-   primary for the rest) — so it was tried first, per CLAUDE.md rule 1.
-   Rendered a live instance and read its actual DOM (dotnet watch hot-reload
-   can patch an EXISTING page's render tree — confirmed by editing
-   QuestionDistribution.razor directly and inspecting via a headless
-   browser — but does NOT pick up a brand-new @page route without a full
-   rebuild neither watch nor a manual `dotnet build` could complete while the
-   dev server held the output lock; noted here in case a future pass hits
-   the same wall). The real output:
-     <div role="group" class="mud-toggle-group ...">
-       <button role="checkbox" aria-checked="true"  class="...mud-button-filled-primary...">اختيار متعدد</button>
-       <button role="checkbox" aria-checked="false" class="...mud-button-outlined-primary...">سحب وإملاء</button>
-     </div>
-   MudToggleGroup hardcodes role="group" on the wrapper and role="checkbox"
-   on every item, in EVERY SelectionMode (including SingleSelection) —
-   neither role nor aria-checked's semantics are exposed as an overridable
-   parameter anywhere in the documented API. For a mutually-exclusive
-   two-option choice this is the WRONG ARIA (a screen reader announces two
-   independent checkboxes, not one exclusive choice), which is exactly what
-   this instruction asked to avoid. Patching it via attribute splatting would
-   mean fighting an undocumented internal (CLAUDE.md rule 3's spirit extended
-   to ARIA, not just CSS specificity) for a two-button control that's cheap
-   to own outright — so this is a small custom component, plain semantic
-   <button> elements with the real ARIA radiogroup/radio pattern wired by
-   hand, reusing MudToggleGroup's proven VISUAL result (filled-primary /
-   outlined-primary) via the same underlying tokens instead of its markup.
-   ============================================================================
-
-   ACCESSIBILITY — WAI-ARIA radiogroup pattern (CLAUDE.md §6):
-     - Wrapper: role="radiogroup" with a required AriaLabel (the visible
-       "توزيع الأسئلة" section title is a separate heading, not this
-       control's own accessible name, so it's passed explicitly).
-     - Each item: role="radio" + aria-checked, native <button> (semantic
-       HTML first) so Enter/Space activation and the disabled state come
-       free from the platform.
-     - Roving tabindex: only the SELECTED item is tabindex="0"; the rest are
-       "-1", so Tab enters/exits the whole group in one stop — the real APG
-       radiogroup pattern, not just "every button is its own tab stop".
-     - Arrow keys move BOTH selection and focus together (APG radiogroup
-       behavior, same as a native <input type="radio"> group) — see
-       OnKeyDownAsync. Deliberately simplified to "any arrow key moves to
-       the OTHER item" (index+1 mod Count): correct and unambiguous for
-       exactly 2 options (this component's only real usage today), but NOT
-       real directional/RTL-aware Left/Right logic — flag and extend this if
-       AppToggleGroup is ever reused with 3+ options.
-     - Touch target ≥44×44 CSS px and a visible focus ring on top of the
-       item's own selected/unselected colors (the shared --focus-ring-*
-       tokens, same standing rule as every other interactive component in
-       this file) — never color alone, never a substitute for the ring.
-   ============================================================================ *@
+@* Shared two-option segmented control. Custom, not MudBlazor's
+   MudToggleGroup — that always renders role="checkbox", wrong ARIA for
+   a mutually-exclusive choice — so this is a hand-wired radiogroup
+   reusing its look through the same tokens. Arrow keys jump between
+   items, simplified to "any arrow = the other one" for 2 options only. *@
 @typeparam T
 
 <div class="app-toggle-group" role="radiogroup" aria-label="@AriaLabel">
@@ -101,10 +47,8 @@
 
     [Parameter] public bool Disabled { get; set; }
 
-    /// Required: role="radiogroup"'s own accessible name. The visible
-    /// section title next to this control (e.g. "توزيع الأسئلة") is a
-    /// separate heading element, not programmatically tied to this group,
-    /// so it must be repeated here rather than assumed.
+    /// This group's accessible name — the visible heading next to it isn't
+    /// linked automatically, so pass it explicitly.
     [Parameter, EditorRequired] public string AriaLabel { get; set; } = string.Empty;
 
     private readonly List<ElementReference> _itemRefs = new();
@@ -133,9 +77,7 @@
             : Task.CompletedTask;
     }
 
-    /// Any arrow key moves to "the other" item — see the header comment's
-    /// ACCESSIBILITY note on why (index+1) % Count is correct only because
-    /// this component has exactly 2 options today.
+    /// Any arrow key moves to "the other" item — see header comment.
     private async Task OnKeyDownAsync(KeyboardEventArgs e, int index)
     {
         if (Disabled || Options.Count < 2)

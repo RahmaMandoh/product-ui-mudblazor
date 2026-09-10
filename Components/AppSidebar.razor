@@ -1,50 +1,16 @@
-@* AppSidebar — product sidebar navigation.
-
-   Built per CLAUDE.md §3.1: this is MudBlazor-internal wiring
-   (MudNavMenu/MudNavLink/MudNavGroup), not a shared cross-screen visual
-   pattern, so it's styled via CSS isolation (AppSidebar.razor.css) rather
-   than styles/components.css.
-
-   The item list below is PROVISIONAL DEMO CONTENT only, using exactly the
-   example labels given alongside the Figma states (regular / nested child /
-   two parent groups) — enough to visually verify all four states render
-   correctly. It is not the real information architecture; real routes,
-   icons and labels for ScreenA/ScreenB will replace this.
-
-   Demo default state is chosen to demonstrate real (not faked) behavior:
-   "الإعدادات" starts expanded with its child "أختبارات المستخدم" pointing
-   at Href="/" — genuinely active on initial load via real Blazor routing,
-   which also exercises "parent open + active child, still independently
-   blue" without needing to fake any CSS class by hand. "جداول الاختبارات"
-   starts closed to show the closed default/hover state.
-
-   The outer <div class="app-sidebar-shell"> is required for CSS isolation
-   to work at all here, not decorative: Blazor only ever attaches a scoped-
-   CSS attribute (b-xxxxxxxxxx) to a raw HTML element written directly in
-   THIS .razor file — never to a component tag like <MudNavMenu>. Without
-   a real wrapping element, AppSidebar.razor.css's `::deep` selectors would
-   have no scope anchor to attach to at all and could never match anything,
-   regardless of how they're written (confirmed by actually running the app
-   — every rule silently failed to apply until this wrapper was added). See
-   https://learn.microsoft.com/aspnet/core/blazor/components/css-isolation
-   "Child component support". *@
+@* Product sidebar navigation. MudBlazor-internal wiring, so it's styled
+   via CSS isolation (AppSidebar.razor.css) instead of components.css.
+   The item list is placeholder demo content — real routes/icons/labels
+   come later. The wrapping <div class="app-sidebar-shell"> is required
+   so AppSidebar.razor.css's `::deep` selectors have something to anchor
+   to; without it none of those rules apply. *@
 <div class="app-sidebar-shell">
 
     <MudDrawer @bind-Open="Open" Variant="DrawerVariant.Responsive" Breakpoint="Breakpoint.Md"
                Anchor="Anchor.Start" Elevation="0" Class="app-sidebar-drawer">
-        @* Explicit close action for the mobile overlay (CLAUDE.md-adjacent
-           task wording explicitly allows this as an alternative to tap-
-           outside). Needed, not decorative: verified live that the open
-           drawer is a full-height fixed overlay starting at the very top of
-           the viewport, so it visually covers AppHeader's hamburger button
-           at the same screen position — there is no way to re-tap the
-           hamburger to close once open. Also verified that MudDrawer's
-           OverlayAutoClose (scrim-click-to-close) does not fire for
-           Variant="Responsive": its own XML docs tie that behavior
-           specifically to Variant="Temporary", and a live click on the real
-           .mud-overlay-scrim confirmed it does nothing here. Hidden at/above
-           the desktop breakpoint the same way the hamburger is, since the
-           drawer is never a dismissible overlay there. *@
+        @* Real close button, needed not decorative: the open drawer covers
+           the hamburger, and tap-outside doesn't work for
+           Variant="Responsive" — checked live. Hidden at desktop widths. *@
         <MudIconButton Icon="@Icons.Material.Outlined.Close"
                        Color="Color.Default"
                        Class="app-sidebar-close-btn"
@@ -71,7 +37,7 @@
             </SidebarParentItem> *@
 
             <SidebarParentItem Title="جداول الأختبارات" Icon="@Icons.Material.Outlined.WatchLater">
-                @* This icon here didn't work, I will back to it latter *@
+                @* Custom SVG icon below didn't render right — left out until sorted. *@
                 @* <SidebarItem Text="الجداول" CustomIcon="assets/TableTimeOutline.svg" Href="/quizs-tables" />
                 <SidebarItem Text="المقرات" Icon="@Icons.Material.Outlined.LocationOn" Href="/locations" />
                 <SidebarItem Text="قوالب أمان الجدول الزمني" Icon="@Icons.Material.Outlined.SafetyCheck" Href="/schedule-templates" /> *@
@@ -91,18 +57,9 @@
 @inject IBrowserViewportService BreakpointService
 
 @code {
-    // Bindable so MainLayout can own the single source of truth for open/closed
-    // state and toggle it from AppHeader's hamburger button (a sibling component).
-    // Default false: starting `true` and letting MudBlazor's own JS breakpoint
-    // watcher self-correct it to false on mobile DOES work for the drawer
-    // itself, but was found (via an actual Playwright run, not assumed —
-    // CLAUDE.md rule 1) to leave the drawer's internal overlay/scrim stuck
-    // fully open with pointer-events:auto across the whole viewport, blocking
-    // every tap on first mobile load even though the drawer looked closed.
-    // Starting false avoids that transition entirely; OnAfterRenderAsync below
-    // then opens it explicitly for desktop-width screens via MudBlazor's own
-    // documented IBrowserViewportService (never guessing Breakpoint enum
-    // ordinals) instead of relying on the drawer's initial-value correction.
+    // Bindable so MainLayout owns open/closed state. Defaults false —
+    // starting open left the drawer overlay stuck blocking taps on
+    // mobile load, confirmed live.
     [Parameter] public bool Open { get; set; } = false;
     [Parameter] public EventCallback<bool> OpenChanged { get; set; }
 

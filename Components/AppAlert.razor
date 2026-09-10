@@ -1,58 +1,7 @@
-@* Components/AppAlert.razor — shared inline alert/banner component
-   (CLAUDE.md §3.1). Covers Screen B's "إجراء مطلوب" warning strip and the
-   "اخترت عدة أسئلة..." success strip (both in
-   demo/ScreenB/TaskTwo_from_figma_design.png) as ONE component with a
-   Severity param, not two — both strips share identical anatomy (icon +
-   message, tinted bg/icon/text per severity). See tokens.css's own "Alert"
-   section for the full color/contrast writeup and DECISIONS.md for the
-   accessible-substitute candidate table.
-
-   ANATOMY, pixel-confirmed against the reference PNG (CLAUDE.md rule 1),
-   not assumed: a content-sized, fully-rounded pill — NOT full-width, NOT
-   bordered (a direct tint-to-page-background transition was found at every
-   edge of both pills, no separate border-stroke hue in between; corrects
-   the original "background tint + border" anatomy assumption). Icon
-   leading — renders at the RTL right/start edge, same "first DOM child =
-   RTL right edge" convention already established by AppActionBanner/
-   AppStatusCard's own icon badges.
-
-   FLAGGED, not silently normalized: the warning pill's icon sits measurably
-   closer to mid-pill in the raw reference than flush against its right
-   edge, unlike the success pill (icon flush against its own right edge).
-   Most likely a bidi-rendering artifact of an icon glyph sitting inline
-   inside a mixed-direction Arabic string in the source design tool's
-   export, not a deliberate "icon between two text runs" layout — both
-   severities are standardized here on the same icon-leading/right-edge
-   layout for internal consistency and to match the rest of this codebase.
-   Flag if the offset position in the warning reference was actually
-   intentional.
-
-   ICONS — confirmed two ways (CLAUDE.md rule 1): (1) grepped the compiled,
-   installed MudBlazor.dll's own strings for the exact constant names,
-   not assumed from memory — both exist in this project's MudBlazor 8.7;
-   (2) zoomed pixel crops of the reference PNG confirmed the actual glyph
-   shapes. Warning is an OUTLINED/rounded triangle with "!"
-   (Icons.Material.Filled.WarningAmber) — NOT the solid-filled
-   Icons.Material.Filled.Warning. Success is an OUTLINED circle with a
-   checkmark (Icons.Material.Filled.CheckCircleOutline) — NOT the solid
-   Icons.Material.Filled.CheckCircle.
-
-   role="alert" (Warning) vs role="status" (Success) — CLAUDE.md §6. Warning
-   is the "you cannot proceed until this is fixed" case, matching
-   role="alert"'s implicit aria-live="assertive"; Success is an advisory
-   confirmation of a completed user action, matching role="status"'s
-   implicit aria-live="polite" — the same urgent/advisory split ARIA's own
-   authoring practices document for these two roles.
-
-   Icon is wrapped in a plain aria-hidden="true" span (not an attribute on
-   MudIcon itself) — same established pattern as AppActionBanner's badge and
-   AppStatusCard's icon badge, so the message text (real, visible,
-   already-confirmed-contrast text) is the only thing announced, not the
-   decorative icon.
-
-   No focus ring / touch-target sizing here (see components.css's own note
-   on this component): it renders no button/link, only a status pill, so
-   neither CLAUDE.md §6 rule applies. *@
+@* Shared inline alert pill — Screen B's warning/success strips, one
+   component with a Severity param. Shape: content-width pill, no border.
+   role="alert" (interrupts) for Warning, role="status" (quiet) for
+   Success. No focus ring/touch-target sizing — not a button or link. *@
 
 <div class="app-alert app-alert--@SeverityClass" role="@RoleForSeverity">
     <span class="app-alert__icon" aria-hidden="true">
@@ -66,9 +15,7 @@
 
     [Parameter, EditorRequired] public string Message { get; set; } = string.Empty;
 
-    /// Override the per-severity default icon. Most consumers should leave
-    /// this unset — the default icons are already confirmed against the
-    /// Figma reference (see header comment above).
+    /// Override the per-severity default icon. Leave unset in most cases.
     [Parameter] public string? Icon { get; set; }
 
     private string SeverityClass => Severity switch

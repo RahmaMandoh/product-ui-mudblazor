@@ -1,23 +1,7 @@
-@* Expandable navigation group header. Wraps MudNavGroup.
-
-   IconColor="Color.Inherit" is set explicitly here (CLAUDE.md rule 2): the
-   MudBlazor 8.7.0 default for MudNavGroup.IconColor is Color.Default, which
-   adds a "mud-nav-link-icon-default" class carrying a fixed color — passing
-   Inherit avoids that class entirely so our own token-driven `color` on
-   `.mud-nav-link` cascades to the icon instead of fighting a fixed color.
-
-   MudNavGroup has NO equivalent color parameter for ExpandIcon (verified
-   against the installed 8.7.0 package's XML docs and its actual .razor.cs
-   source — only `IconColor` exists, and it only affects the group's own
-   `Icon`). The expand arrow's color is therefore handled entirely in
-   AppSidebar.razor.css instead.
-
-   `_expanded` mirrors MudNavGroup's real Expanded state via @bind-Expanded
-   (not just the `Expanded` parameter alone) so the "sidebar-parent-expanded"
-   class we add to MudNavGroup's own Class stays correct after the user
-   clicks to toggle it — MudNavGroup manages that toggle internally, and
-   without capturing it back here this class would go stale after first
-   render. *@
+@* Expandable nav group header, wrapping MudNavGroup. IconColor="Inherit"
+   avoids MudBlazor's fixed-color default so our own token wins.
+   `_expanded` mirrors MudNavGroup's real state via @bind-Expanded so the
+   "sidebar-parent-expanded" class doesn't go stale after a toggle. *@
 <MudNavGroup Title="@Title"
              Icon="@Icon"
              IconColor="Color.Inherit"

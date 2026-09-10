@@ -1,48 +1,8 @@
-@* AppQuestionCard.razor — shared reusable question-bank list item (CLAUDE.md
-   §3.1), Screen B's "مجمع بنوك العناصر" column. Read directly off
-   demo/ScreenB/UI_ UX 2.jpeg (the only reference that actually shows this
-   list — TaskTwo_from_figma_design.png and its Tablet/Mobile companions all
-   cut off just above it), CLAUDE.md rule 1.
-
-   ANATOMY CONFIRMED PER CARD (3 sample cards zoomed/cropped individually):
-     - A primary tag (solid blue pill: "AudioTest" / a long ID string /
-       "سؤال-2") + a secondary tag (solid dark pill: "بنك اسئلة") stacked
-       VERTICALLY, at the card's own left edge.
-     - Question text (when present — one of the 3 sample cards has none at
-       all, just its two tags), multi-line, filling the space between the
-       tags and the icons.
-     - A small help icon (Icons.Material.Filled.Quiz — a document+"?" glyph,
-       closest standard match to the reference's icon) + an unchecked
-       checkbox, both at the card's right edge, checkbox rightmost.
-
-   DRAG HANDLE — FLAGGED, NOT CONFIRMED: no drag-handle glyph is clearly
-   visible on any of the 3 sample cards at this JPEG's resolution (checked
-   both tight per-icon crops and full-card-width crops). Included anyway
-   per instruction (this component's whole purpose is an upcoming
-   drag-and-drop pass) using the same DragIndicator icon already
-   established for drag affordance elsewhere in this library (AppToggleGroup
-   "سحب وإملاء"), placed at the row's own outer/right edge — an ASSUMED
-   position, not read off the image. Flag if it shouldn't be there, or
-   belongs on the opposite edge.
-
-   TAGS — NOT AppChip: AppChip is a single-color light-tint pill with an
-   optional icon (Screen B's "نموذج 1" tag). These are a different, simpler
-   pattern — solid-fill, no icon, two color variants (checked against
-   tokens.css/components.css first, per instruction) — so they render as
-   plain .app-tag spans (components.css) instead, not a second Blazor
-   component: "simple enough it doesn't need its own states" applies here
-   even more than it did to AppChip itself.
-
-   CHECKBOX — plain native <input type="checkbox"> (CLAUDE.md §6: native
-   semantic HTML first), wrapped in a <label> padded to the
-   --a11y-touch-target-min hit area (44×44) even though the visible box
-   stays small — clicking anywhere in the label toggles the input natively,
-   no JS needed. No visible text label exists for it in the reference, so
-   its accessible name is synthesized from PrimaryTagLabel/Text.
-
-   Help icon and drag handle are both decorative only this pass (no
-   real tooltip/drag behavior yet, per instruction) — aria-hidden, no
-   focus stop, no cursor affordance implying working drag. *@
+@* One question-bank list item, Screen B's "مجمع بنوك العناصر" column.
+   Not AppChip — these tags are simpler, solid-fill with no icon. Drag
+   handle isn't in the reference but added for upcoming drag support;
+   it and the help icon are decorative only, not focusable. Checkbox's
+   accessible name comes from the card's tag/text, no visible label. *@
 <div class="app-question-card">
     <MudIcon Icon="@Icons.Material.Filled.DragIndicator" Color="Color.Inherit" Class="app-question-card__drag-handle" aria-hidden="true" />
 
@@ -73,13 +33,10 @@
 @code {
     [Parameter, EditorRequired] public string PrimaryTagLabel { get; set; } = string.Empty;
 
-    /// Second, dark pill (e.g. "بنك اسئلة") — optional since it's plausible
-    /// a future card only needs one tag; every sample in the reference
-    /// happens to show both.
+    /// Second, dark pill (e.g. "بنك اسئلة") — optional.
     [Parameter] public string? SecondaryTagLabel { get; set; }
 
-    /// Question text — null renders no <p> at all (one of the 3 reference
-    /// cards has no question text, just its two tags), not an empty one.
+    /// Question text. Leave unset to render none.
     [Parameter] public string? Text { get; set; }
 
     [Parameter] public bool Checked { get; set; }

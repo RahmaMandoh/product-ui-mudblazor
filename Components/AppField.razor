@@ -1,138 +1,17 @@
-@* AppField.razor — shared reusable field (CLAUDE.md §3.1: used identically
-   by Screen A and Screen B), styled through styles/components.css +
-   styles/mudblazor-overrides.css, not a .razor.css, since this defines a
-   new reusable visual pattern rather than one component's internal wiring.
-
-   ============================================================================
-   SUPERSEDES the earlier single-purpose AppField.razor (flagged, not merged
-   silently — see below).
-   ============================================================================
-   The previous version of this file wrapped MudTextField<string> only, with
-   Value/ValueChanged/Label/Disabled/Error/ErrorText/AdornmentIcon. Its only
-   real call site was Pages/Dashboard.razor:6 (a scratch/demo home page, not
-   built-out Screen A/B content yet) — demo/ScreenA/SyncStatus.razor only
-   name-drops "AppField" in a comment about future work, it never actually
-   used it. Given that, and that this new Type=Text branch below is a
-   superset of the old component (same MudTextField<T> wrapper, same
-   classes/tokens, T inferred as string for old-style callers), I replaced
-   the file in place rather than adding a second, confusingly-similarly-named
-   component — updated the one real call site (Dashboard.razor) to add
-   T="string" (required — see GENERIC TYPE INFERENCE note below). If you'd
-   rather have kept the old file untouched and shipped this as a
-   differently-named component, say so and I'll split them back apart.
-
-   ============================================================================
-   VALUE-TYPE ARCHITECTURE — why AppField<T>, not one non-generic component
-   ============================================================================
-   Checked the installed MudBlazor 8.7.0 MudBlazor.xml docs directly (not
-   assumed) for all three wrapped controls:
-     - MudTextField<T>   : Value/ValueChanged of type T, inherits Error/
-                           ErrorText/ErrorId from MudFormComponent<T,T>.
-     - MudAutocomplete<T>: same — Value/ValueChanged of type T, inherits the
-                           same Error/ErrorText/ErrorId, plus SearchFunc/
-                           ToStringFunc/ItemTemplate.
-     - MudDatePicker     : does NOT share that lineage. Its base, MudPicker<T>,
-                           is its own hierarchy — NOT a MudFormComponent<T,T>.
-                           It has no Value/ValueChanged, no Error/ErrorText/
-                           ErrorId at all. The bindable value is specifically
-                           `Date`/`DateChanged` (DateTime?), fixed, not generic.
-   So MudTextField<T> and MudAutocomplete<T> are genuinely generic and can
-   share one `T Value`/`EventCallback<T> ValueChanged` pair — that part of a
-   single unified component is clean. MudDatePicker cannot share that pair:
-   embedding `<MudDatePicker Value="@Value">` inside an AppField<T> would
-   only compile for T == DateTime?, not for any T, so it would break the
-   Text/Select branches' genericity (or require an unsafe object cast,
-   reintroducing boxing right where the brief asked to avoid it).
-   Chosen approach: AppField<T> stays generic for Text/Select (T defaults to
-   string for virtually all real usage), and Date gets its own dedicated
-   `DateValue`/`DateValueChanged` (DateTime?) pair bound straight to
-   MudDatePicker's own `Date`/`DateChanged` — Value/ValueChanged are simply
-   unused when Type="AppFieldType.Date". This is an intentional, documented
-   asymmetry driven by MudBlazor's own API shape (verified above), not an
-   awkward compromise invented here.
-
-   GENERIC TYPE INFERENCE: Razor infers T from a bound Value/Options
-   expression. If a Text/Select field is used with no Value bound at all
-   (e.g. the empty "Default" state in the gallery below), the compiler can't
-   infer T and the tag needs an explicit T="string" (or whatever type). Every
-   Text/Select usage below sets T explicitly for that reason.
-
-   ============================================================================
-   KNOWN GAP — MudDatePicker's rendered DOM is UNVERIFIED for this CSS
-   ============================================================================
-   CLAUDE.md rule 1: don't guess the rendered DOM. The existing
-   mudblazor-overrides.css selectors (.mud-input, .mud-input-outlined,
-   .mud-shrink, .mud-input-outlined-border, .mud-input-label-inputcontrol)
-   were derived only from MudTextField's shipped CSS text, and were already
-   flagged there as not yet DevTools-confirmed. Whether MudAutocomplete<T>'s
-   text box and MudDatePicker's text box render through the *same*
-   MudInputControl markup (so the same selectors theme them too) is not
-   confirmed either way — I have not run `dotnet build` + inspected the
-   scopedcss bundle or DevTools Elements for this component yet. Applying the
-   same selectors here is a reasoned guess (MudBlazor's picker input visually
-   looks identical to an outlined MudTextField with an adornment button,
-   which suggests shared markup), not a confirmed fact. Per CLAUDE.md §7,
-   treat the Select/Date columns of the states gallery as unverified until a
-   rebuild + DevTools screenshot confirms the classes actually land as
-   expected — this is flagged again at the top of the CSS section that
-   depends on it.
-
-   Separately, because MudPicker<T> has no Error parameter (see above), it
-   never gets MudBlazor's own `.mud-input-error` class — so the Error visual
-   state for Type="AppFieldType.Date" is driven by AppField's own
-   `app-field-input--error` class (added below whenever Error="true",
-   regardless of Type), not by MudBlazor's error mechanism. For Text/Select
-   this is a harmless, redundant second way to reach the same rule; for Date
-   it's the *only* way. Same reasoning for the error message's
-   aria-describedby wiring: MudFormComponent's ErrorId plumbs it in
-   automatically for Text/Select, but MudDatePicker has no ErrorId, so it's
-   added by hand via UserAttributes below.
-
-   ============================================================================
-   CORRECTION — "Filled" is not one shared visual state across Types
-   ============================================================================
-   The first pass at this component treated "has a value, resting" as one
-   shared state (reusing the same tokens for Text/Select/Date). Real Figma
-   data showed that's wrong: there are two distinct filled looks — Selected
-   (blue-accented, Date only — a date has been chosen) and FillOut
-   (gray-accented, Text/Select only — has a value). Both render through the
-   same MudBlazor .mud-shrink class, so CSS alone can't tell them apart —
-   TypeClass below adds a per-Type modifier class
-   (app-field-input--date/--text/--select) specifically so
-   mudblazor-overrides.css can branch on it. Focused (row 4, "Filled —
-   Focused") is unaffected by this split — it's a third, separate state that
-   wins over both Selected and FillOut whenever the field has focus,
-   regardless of Type, per the confirmed row-3/4/5 reading.
-
-   UPDATE (see DECISIONS.md): Selected's own colors were later repointed to
-   the same gray as FillOut by a deliberate product decision (uniform
-   resting look; only Focused stays blue-accented) — so despite the
-   "blue-accented" description above, Date's resting-filled look now
-   renders identical to FillOut's. The modifier class split itself is still
-   required (Selected/FillOut remain two separate selectors in
-   mudblazor-overrides.css, per-Type, even though they currently resolve to
-   the same tokens) — don't collapse TypeClass back to one shared value on
-   the assumption the colors matching means the states do too.
-
-   ============================================================================
-   Popups (calendar / autocomplete dropdown): still MudBlazor's default
-   indigo/purple theme (screenshots 2 and 3) — not re-skinned, since no token
-   values exist for their internals yet. Known gap, not a silent omission.
-   ============================================================================ *@
+@* One shared field for Text, Select, and Date. Date has no Value/Error
+   param unlike the other two, so it gets its own DateValue pair plus
+   hand-wired error/aria-describedby. TypeClass exists because Date's
+   Selected and Text/Select's FillOut share one MudBlazor class
+   internally — see DECISIONS.md. Select/Date's CSS isn't yet
+   DevTools-confirmed against the real DOM. *@
 @typeparam T
 
 <div class="app-field">
     @switch (Type)
     {
         case AppFieldType.Date:
-            @* No FullWidth here — MudPicker<T> (MudDatePicker's base) has no such
-               parameter (confirmed against MudBlazor.xml's full member list for
-               MudPicker`1, and by the runtime itself: passing FullWidth="true"
-               made Blazor treat it as an unmatched attribute destined for
-               UserAttributes, which collided with binding UserAttributes
-               explicitly below and threw at startup). MudDatePicker's width is
-               already governed by the wrapping .app-field { width: 100% } rule
-               in components.css, so nothing is lost by leaving it off. *@
+            @* No FullWidth — MudDatePicker has no such parameter; width
+               already comes from the wrapping .app-field rule. *@
             <MudDatePicker Date="@DateValue"
                            DateChanged="@DateValueChanged"
                            Label="@Label"
@@ -183,10 +62,7 @@
             break;
     }
 
-    @* Same reasoning as the old AppField: never rely on MudBlazor's own
-       ErrorText slot (plain string, no icon), so it's never passed to any of
-       the three controls above — we render our own icon+text row instead
-       (CLAUDE.md §6: never color alone). *@
+    @* Our own error row (icon + text) — MudBlazor's built-in one has no icon. *@
     @if (Error && !string.IsNullOrWhiteSpace(ErrorText))
     {
         <p id="@_errorId" class="app-field-error" role="alert">
@@ -197,25 +73,17 @@
 </div>
 
 @code {
-    /// Which MudBlazor control renders internally. Defaults to Text since
-    /// that's the shape the earlier AppField always was.
+    /// Which MudBlazor control renders internally. Defaults to Text.
     [Parameter] public AppFieldType Type { get; set; } = AppFieldType.Text;
 
-    /// Persistent visible label (CLAUDE.md §6) — MudBlazor renders this as a
-    /// real animated &lt;label&gt;, not a placeholder, for all three controls
-    /// (MudTextField/MudAutocomplete via MudInputControl, MudDatePicker via
-    /// its own equivalent). There is deliberately no Placeholder parameter on
-    /// AppField so a consumer can't substitute one for the other.
+    /// Persistent visible label — no Placeholder parameter exists, on purpose.
     [Parameter] public string? Label { get; set; }
 
-    /// Text/Select value — unused when Type="AppFieldType.Date" (see the
-    /// VALUE-TYPE ARCHITECTURE note above for why Date can't share this).
+    /// Text/Select value — unused for Type="Date" (see header comment).
     [Parameter] public T Value { get; set; } = default!;
     [Parameter] public EventCallback<T> ValueChanged { get; set; }
 
-    /// Date value — only meaningful when Type="AppFieldType.Date". Bound
-    /// directly to MudDatePicker's own Date/DateChanged (DateTime?, not
-    /// generic — MudBlazor's own API shape, confirmed via MudBlazor.xml).
+    /// Date value — only meaningful for Type="Date".
     [Parameter] public DateTime? DateValue { get; set; }
     [Parameter] public EventCallback<DateTime?> DateValueChanged { get; set; }
 
@@ -228,8 +96,7 @@
     /// Select-only. Display text for each option; defaults to T.ToString().
     [Parameter] public Func<T, string>? ToStringFunc { get; set; }
 
-    /// Select-only. Override the default "contains" filter over Options if
-    /// the consumer needs different matching (e.g. server-side search).
+    /// Select-only. Overrides the default "contains" filter over Options.
     [Parameter] public Func<string, CancellationToken, Task<IEnumerable<T>>>? SearchFunc { get; set; }
 
     /// Select-only. Custom rendering for each dropdown item.
@@ -240,52 +107,21 @@
     [Parameter] public bool Error { get; set; }
     [Parameter] public string? ErrorText { get; set; }
 
-    /// Text-only adornment (e.g. a warning glyph, or a search icon). Select/
-    /// Date have their own built-in adornments (dropdown arrow / calendar
-    /// icon) and don't take this parameter.
+    /// Text-only. Select/Date have their own built-in adornments instead.
     [Parameter] public string? AdornmentIcon { get; set; }
 
-    /// Text-only. Which side AdornmentIcon renders on — added for Screen B's
-    /// search fields (Icons.Material.Filled.Search at the RTL START, i.e.
-    /// the right edge, confirmed against TaskTwo_from_figma_design.png's
-    /// pill-shaped search box, CLAUDE.md rule 1), which the original
-    /// hardcoded Adornment.End couldn't produce. Defaults to End — every
-    /// AdornmentIcon usage before this pass relied on that implicit
-    /// behavior, so the default keeps them unchanged.
+    /// Text-only. Which side AdornmentIcon renders on. Defaults to End.
     [Parameter] public Adornment AdornmentPosition { get; set; } = Adornment.End;
 
-    /// Passed through to the underlying control (e.g. aria-label,
-    /// autocomplete) without adding bespoke parameters for each one.
-    ///
-    /// Defaulted to a non-null, empty dictionary rather than left nullable:
-    /// Blazor only populates a [CaptureUnmatchedValues] parameter when there
-    /// ARE unmatched attributes on a given usage — when there are none (the
-    /// common case; none of the gallery's Select/Date/Text cells pass any),
-    /// the property keeps whatever default it was declared with. Left
-    /// nullable, that default was null, and null was then handed straight to
-    /// MudAutocomplete's/MudTextField's own UserAttributes parameter, which
-    /// both dereference internally (a LINQ FirstOrDefault over it during
-    /// MudBaseInput.OnInitializedAsync, and MudAutocomplete.GetAutocomplete's
-    /// own dictionary lookup) — confirmed by the actual runtime
-    /// ArgumentNullExceptions this caused ("Value cannot be null (Parameter
-    /// 'source'/'dictionary')"), not a theoretical concern.
+    /// Passed through to the underlying control (e.g. aria-label). Defaults
+    /// to an empty dictionary, not null — MudBlazor throws on a null one.
     [Parameter(CaptureUnmatchedValues = true)]
     public Dictionary<string, object> InputAttributes { get; set; } = new();
 
     private readonly string _errorId = $"app-field-error-{Guid.NewGuid():N}";
 
-    /// Per-Type modifier class. Exists ONLY so mudblazor-overrides.css can
-    /// tell apart the two different "has a value, resting" looks — Selected
-    /// (Date only) vs FillOut (Text/Select) — since both render through the
-    /// same .mud-shrink MudBlazor class and CSS has no other way to
-    /// distinguish them. Applied regardless of state (not just when filled)
-    /// so the CSS selectors stay simple compound selectors rather than
-    /// needing this class added/removed conditionally.
-    /// NOTE: Selected originally read blue-accented per literal Figma
-    /// values; a later product decision (DECISIONS.md) repointed its tokens
-    /// to match FillOut's gray. The class split documented above still
-    /// exists and still matters for that reason alone, independent of
-    /// whatever colors the two states currently happen to share.
+    /// Per-type class so mudblazor-overrides.css can tell Date's Selected
+    /// apart from Text/Select's FillOut — see header comment.
     private string TypeClass => Type switch
     {
         AppFieldType.Date => "app-field-input--date",
@@ -293,20 +129,14 @@
         _ => "app-field-input--text",
     };
 
-    /// Applied to all three controls' Class parameter. The "--error"
-    /// modifier is what actually themes the Date branch's error state (see
-    /// the KNOWN GAP note above — MudDatePicker has no Error parameter of
-    /// its own to drive MudBlazor's usual .mud-input-error class).
+    /// The "--error" modifier is what drives Date's error look, since it
+    /// has no Error parameter of its own.
     private string WrapperClass => Error
         ? $"app-field-input {TypeClass} app-field-input--error"
         : $"app-field-input {TypeClass}";
 
-    /// MudDatePicker has no ErrorId to wire aria-describedby automatically
-    /// (see KNOWN GAP above), so it's added here by hand, on top of whatever
-    /// InputAttributes the consumer already passed. Always non-null, same as
-    /// InputAttributes itself — copies it into a new dictionary rather than
-    /// mutating the original, since InputAttributes is a settable Parameter
-    /// a caller might reuse elsewhere.
+    /// MudDatePicker can't wire aria-describedby on its own, so it's added
+    /// here by hand, into a copy so the caller's own dictionary is untouched.
     private Dictionary<string, object> DateInputAttributes
     {
         get

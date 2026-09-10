@@ -4,24 +4,9 @@
    checklist, driven by Figma screens. */
 
 /* ==========================================================================
-   Field (AppField<T>) — shared cross-screen pattern (CLAUDE.md §3.1), used by
-   Screen A and Screen B identically via the .app-field wrapper + the
-   .app-field-error row Components/AppField.razor renders, regardless of
-   which FieldType (Text/Select/Date) is in use — nothing in this file
-   references FieldType or a specific MudBlazor control, by design.
-
-   Split of responsibility (resolves the §3.1 / §5 tension explicitly,
-   flagged rather than silently picked):
-     - THIS file: rules that only ever need OUR OWN class names
-       (.app-field, .app-field-error, .app-field-error-icon) — nothing here
-       references a MudBlazor-generated class, so it stays valid per §5.
-     - mudblazor-overrides.css: the .app-field-input anchor plus any rule
-       that must reach a MudBlazor-generated descendant class
-       (.mud-input-outlined-border, .mud-disabled, .mud-input-label, etc.)
-       to actually recolor the rendered MudTextField — scoped under
-       .app-field-input so it only ever fires where this shared pattern is
-       used, keeping the "one reusable pattern, two screens" intent while
-       still obeying §5's "MudBlazor classes only in mudblazor-overrides.css".
+   Field (AppField) — only rules needing our own class names live here;
+   anything reaching a MudBlazor-generated class lives in
+   mudblazor-overrides.css instead.
    ========================================================================== */
 
 .app-field {
@@ -29,29 +14,19 @@
   width: 100%;
 }
 
-/* ---- Focused (standalone, CLAUDE.md §6 — visible focus, not just
-   outline:none) ---- reuses the shared --focus-ring-* tokens (same ones
-   AppHeader.razor.css uses), per instruction not to define a new focus
-   style for this component. References only .app-field-input, our own
-   class — no MudBlazor class name touched, so this stays in this file
-   rather than mudblazor-overrides.css. Applies to every field Type
-   (Text/Select/Date) by default — see DECISIONS.md for the Date-only
-   exception immediately below. */
+/* Shared focus ring, same tokens AppHeader uses. Date-only exception
+   below — see DECISIONS.md, "Field focus ring". */
 .app-field-input:focus-within {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
 }
 
-/* ---- Date field: shared ring intentionally suppressed on Focused only —
-   confirmed scoped to Date, not every field Type (see DECISIONS.md). The
-   MudBlazor border/bg/label Figma-specified Focused colors
-   (mudblazor-overrides.css, --field-color-*-focused) are the sole focus
-   indicator for Date; Text/Select keep both layers per CLAUDE.md §6. */
+/* Date's own Focused colors already serve as its indicator. */
 .app-field-input--date:focus-within {
   outline: none;
 }
 
-/* ---- Error row (icon + text; CLAUDE.md §6 — never color alone) ---- */
+/* Error row: icon + text together, never color alone. */
 .app-field-error {
   display: flex;
   align-items: center;
@@ -74,86 +49,37 @@
 }
 
 /* ==========================================================================
-   Button — Primary variant (AppButton) — shared cross-screen pattern
-   (CLAUDE.md §3.1), used by Screen A and Screen B via
-   <MudButton Variant="Variant.Filled" Color="Color.Primary" Class="app-btn-primary">
-   (Components/AppButton.razor).
-
-   Default background/text and Hover background need NO rule here — both
-   are fully driven by AppTheme.cs's Palette.Primary / PrimaryDarken /
-   PrimaryContrastText once set, verified against MudBlazor 8.7.0's actual
-   shipped MudBlazor.min.css:
-     .mud-button-filled-primary{color:var(--mud-palette-primary-text);
-       background-color:var(--mud-palette-primary)}
-     .mud-button-filled-primary:hover{background-color:var(--mud-palette-primary-darken)}
-
-   MudBlazor's own CSS combines :active and :focus-visible into ONE rule,
-   both sharing that same --mud-palette-primary-darken (targets MudBlazor
-   8.7.0 MudButton, filled+primary):
-     .mud-button-filled-primary:focus-visible,
-     .mud-button-filled.mud-button-filled-primary:active{
-       background-color:var(--mud-palette-primary-darken)}
-   Figma's "onClick" state (--btn-pri-color-bg-active) is a different color
-   than hover, so :active needs its own override below. :focus-visible is
-   deliberately left alone — it keeps showing the hover/darken shade under
-   the button's own background, while the separate focus RING (also below)
-   is what actually satisfies CLAUDE.md §6's visible-focus requirement.
+   Button — Primary variant (AppButton). Default/hover colors come from
+   AppTheme.cs's palette; :active gets its own override below since the
+   design's pressed color differs from MudBlazor's default hover-darken.
    ========================================================================== */
 
 .app-btn-primary {
-  /* MudBlazor's stock Button typography (Typography.Button, unset in
-     AppTheme.cs) defaults to 14px / weight 500 / uppercase (Material spec).
-     Scoped here instead of set globally so only THIS component changes, not
-     the header's existing sync button or any future button — see the
-     matching flag in AppTheme.cs's Typography block. */
+  /* Scoped here, not globally, so only this component's typography changes. */
   font-size: var(--btn-pri-font-size);
   font-weight: var(--btn-pri-font-weight);
   text-transform: none;
   letter-spacing: normal;
 
-  /* CLAUDE.md §6 — touch targets >= 44x44 CSS px. */
   min-height: var(--a11y-touch-target-min);
 }
 
-/* Pressed/"onClick" — confirmed reading: a transient :active state (color
-   changes only while the pointer/key is actually down), not a persisted
-   selected/toggle state — implemented as plain :active, nothing stateful in
-   AppButton.razor. Specificity deliberately raised to 3 classes so this
-   reliably beats MudBlazor's own 2-class
-   ".mud-button-filled.mud-button-filled-primary:active" rule above
-   regardless of <link> order in index.html, rather than relying on cascade
-   order alone. */
+/* Raised specificity (3 classes) to reliably beat MudBlazor's own rule. */
 .mud-button-filled.mud-button-filled-primary.app-btn-primary:active {
   background-color: var(--btn-pri-color-bg-active);
 }
 
-/* Disabled — background/text color need NO rule here: both are already
-   wired through Palette.ActionDisabled / ActionDisabledBackground in
-   AppTheme.cs, so MudBlazor's own `!important` disabled rules
-   (.mud-button-root:disabled, .mud-button-filled:disabled — confirmed in
-   MudBlazor.min.css) resolve to our tokens already; no !important needed on
-   our side. Opacity + cursor ARE added here since MudBlazor's MudButton
-   disabled state never applies the generic .mud-disabled{opacity:.5} class
-   (verified — only some other components, like inputs, use that path). */
 .app-btn-primary:disabled {
   opacity: var(--btn-pri-disabled-opacity);
   cursor: not-allowed;
 
-  /* MudBlazor sets pointer-events:none on .mud-button-root:disabled, which
-     would otherwise silently defeat the cursor:not-allowed above — a
-     pointer-events:none element never resolves :hover/cursor at all, so the
-     cursor shown would just be whatever's underneath. Restoring
-     pointer-events here only re-enables cursor/hover rendering: the native
-     `disabled` attribute on the underlying <button> already blocks
-     click/keyboard activation independent of pointer-events, so this does
-     not make the button interactive again. Flagged as a deliberate, verified
-     deviation, not a guess. */
+  /* Restores cursor/hover only — MudBlazor's pointer-events:none would
+     otherwise hide the not-allowed cursor. Disabled attribute still
+     blocks real interaction. */
   pointer-events: auto;
 }
 
-/* Focus — CLAUDE.md §6: visible focus state, reusing the shared
-   --focus-ring-* tokens (same ones AppHeader/AppField use) rather than
-   inventing a new focus style for this component. */
+/* Reuses the shared focus-ring tokens, not a new style. */
 .app-btn-primary:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -166,71 +92,10 @@
 }
 
 /* ==========================================================================
-   Action banner (AppActionBanner) — shared cross-screen component (CLAUDE.md
-   §3.1, Figma component "btn_box"). Replaces the previous ad-hoc
-   .app-icon-badge--primary fix (two passes back) entirely — that class is
-   removed here, not left dead, since AppActionBanner now owns this anatomy.
-
-   Container: reuses .app-panel for its own border/background exactly like
-   AppStatusCard's own Bordered param (same precedent) — see
-   AppActionBanner.razor's header comment for why both current Screen A call
-   sites pass Bordered="false" (nested inside the already-verified merged
-   .app-sync-block/divider-lines layout) rather than getting their own full
-   border, even though the Figma "btn_box" component screenshot shows one.
-
-   COLOR-SYNC — the pill button and circular badge are ONE synchronized unit
-   across all 3 states, driven by a single custom property set on the root,
-   --app-action-banner-color-bg, so they can never independently drift (per
-   instruction) — not two elements that merely happen to reference the same
-   tokens. CORRECTED this pass: the 3 states are Default/Hover/onClick-
-   pressed — the EXACT same 3-state model AppButton itself has, not a 4th
-   "Disabled" state. An earlier pass misread the reference screenshot's 3rd,
-   lightest-blue row as Disabled and built a whole Disabled code path
-   (--action-banner-color-bg-disabled token, a modifier class, a verified
-   !important override of MudBlazor's own disabled rules) — all removed. It
-   was really just onClick/pressed, same concept AND same token AppButton's
-   own :active state already uses:
-     Default → --btn-pri-color-bg        (AppButton's own default)
-     Hover   → --btn-pri-color-bg-hover  (AppButton's own hover)
-     onClick → --btn-pri-color-bg-active (AppButton's own :active — #75bcd9)
-
-   SPECIFICITY — verified against the actual shipped MudBlazor.min.css
-   (8.7.0), not guessed (CLAUDE.md rule 3): the button's OWN default/hover/
-   active colors already come for free from AppButton's existing CSS
-   (components.css, "Button — Primary variant" section above) without any
-   help from this component:
-     - Default: ".mud-button-filled-primary{background-color:
-       var(--mud-palette-primary)}" — no !important.
-     - Hover: ".mud-button-filled-primary:hover{...}" — no !important.
-     - onClick: MudBlazor's own ".mud-button-filled-primary:focus-visible,
-       .mud-button-filled.mud-button-filled-primary:active{...}" rule (no
-       !important either) would otherwise apply MudBlazor's generic
-       primary-darken on :active, but AppButton already overrides this
-       itself via its own higher-specificity
-       ".mud-button-filled.mud-button-filled-primary.app-btn-primary:active"
-       rule (three classes + pseudo, (0,4,0)) resolving to
-       --btn-pri-color-bg-active — already correct with ZERO extra work
-       needed here, confirmed by reading that existing rule, not assumed.
-   So ".app-action-banner .app-btn-primary{background-color:
-   var(--app-action-banner-color-bg)}" below (two classes, (0,2,0)) only
-   ever needs to win for Default/Hover (where it ties-or-beats MudBlazor's
-   un-!important rules and wins on cascade order, components.css loading
-   after MudBlazor.min.css) — during :active it's simply outranked by
-   AppButton's own (0,4,0) rule above, which is fine since both resolve to
-   the identical --btn-pri-color-bg-active value anyway. No !important
-   needed anywhere in this component — confirmed, not guessed (CLAUDE.md
-   rule 1/3).
-
-   The ONLY thing this component still needs of its own for the 3rd state is
-   syncing the BADGE (which has no MudBlazor CSS of its own to fight) to the
-   same color — ".app-action-banner:active" below does that: CSS :active
-   applies to an element's whole ancestor chain while a descendant is being
-   pressed (standard browser behavior, not MudBlazor-specific), so it fires
-   correctly while the inner button is held down.
-
-   Badge: deliberately NO border/stroke — the actual "btn_box" Figma
-   reference shows a plain filled circle with no stroke, unlike an earlier
-   ad-hoc instruction (before this reference existed) that asked for one.
+   Action banner (AppActionBanner) — the pill button and circular badge
+   stay in sync via one custom property (--app-action-banner-color-bg).
+   States: Default/Hover/pressed, same model as AppButton, reusing its
+   colors — see AppActionBanner.razor for the removed Disabled state.
    ========================================================================== */
 
 .app-action-banner {
@@ -246,10 +111,7 @@
   --app-action-banner-color-bg: var(--btn-pri-color-bg-hover);
 }
 
-/* onClick/pressed — transient, same concept as AppButton's own :active
-   (not a persisted/toggled state). Syncs the badge only; the button's own
-   background is already handled by AppButton's existing :active rule
-   above — see header comment. */
+/* Syncs the badge only — the button's own :active is AppButton's rule. */
 .app-action-banner:active {
   --app-action-banner-color-bg: var(--btn-pri-color-bg-active);
 }
@@ -285,11 +147,9 @@
 }
 
 /* ==========================================================================
-   Panel (.app-panel) — shared bordered/rounded container (CLAUDE.md §3.1).
-   Reused, not duplicated, across every bordered card on Screen A: the
-   filter row below AND the two sync-action cells above it share this exact
-   look in the Figma reference. No MudBlazor class referenced here, so this
-   stays in this file rather than mudblazor-overrides.css (§5).
+   Panel (.app-panel) — the shared bordered, rounded container reused
+   across every bordered card on Screen A: the filter row below and the
+   sync-action cells above it both use this exact look.
    ========================================================================== */
 
 .app-panel {
@@ -300,15 +160,8 @@
 }
 
 /* ==========================================================================
-   Filters row (.app-filters-row) — shared toolbar/filter layout (CLAUDE.md
-   §3.1). Wraps AppField instances only; carries no field-specific styling of
-   its own (see AppField/.app-field in components.css above for that).
-   Equal-width columns on one row down to --breakpoint-sm (600px, the same
-   token AppHeader already collapses at — reused rather than inventing a
-   second breakpoint for one more row of content), full-width stacked below
-   it. Verified at desktop/tablet/mobile widths per CLAUDE.md §7 — see the
-   PR notes for screenshots; tablet needed no rule of its own, the four
-   equal 1fr columns simply narrow together down to 600px.
+   Filters row (.app-filters-row) — equal-width columns down to 600px,
+   then stacked full-width. Tablet needs no rule of its own.
    ========================================================================== */
 
 .app-filters-row {
@@ -324,19 +177,9 @@
 }
 
 /* ==========================================================================
-   Panel header (.app-panel-header) — shared cross-screen pattern (CLAUDE.md
-   §3.1): a section title (+ optional info icon) on one side and a primary
-   action button on the other, sitting above a panel's main content. First
-   real use: Screen B's "بيانات النموذج" section
-   (demo/ScreenB/QuestionDistribution.razor) — title+icon rightmost, "حفظ
-   البيانات" button leftmost. Confirmed against TaskTwo_Tablet.png and
-   TaskTwo_Mobile.png that this row stays ONE row (never stacks) down to
-   430px, so no responsive override exists here — add one if a narrower
-   reference ever shows otherwise.
-   DOM order: title block first, button second — renders the title at the
-   RTL inline-start (right) and the button at inline-end (left) under the
-   app's ambient dir="rtl", same "plain DOM order" convention as
-   AppHeader/Screen A's filter row.
+   Panel header (.app-panel-header) — title + optional icon on one side,
+   action button on the other. Stays one row down to 430px. DOM order:
+   title first, so it lands on the right under RTL, button on the left.
    ========================================================================== */
 .app-panel-header {
   display: flex;
@@ -357,32 +200,16 @@
   color: var(--panel-color-title);
 }
 
-/* Rendered with Color="Color.Inherit" (CLAUDE.md rule 2 — no inline style to
-   fight), so this only needs `color` to pick up the same --panel-color-title
-   as the title text next to it. */
+/* Color="Color.Inherit" in the .razor file, so `color` alone works here. */
 .app-panel-header__title-icon {
   flex: none;
 }
 
-/* Generic content-sized inline row (.app-panel-inline-row) — two clusters
-   packed at the RTL start (right) with a gap, the rest of the row left
-   empty — Screen B's "لقد اخترت: [chip]" and "عدد الاقسام: [button]" rows
-   are both this same shape (confirmed against the reference: neither
-   spans/space-betweens the full panel width). Plain flex row with no
-   justify-content override: under the app's ambient dir="rtl", the default
-   flex-start already packs content at the right — same "plain DOM order"
-   convention as everywhere else in this file. Generic on purpose (CLAUDE.md
-   §3.1) — any future panel row that's "a couple of items, right-packed"
-   reuses this instead of a new one-off class.
-
-   flex-wrap added after a confirmed 375px overflow: this class is also
-   reused for the "توزيع الأسئلة" toggle-group + alert pairing, whose
-   combined content is wider than a 375px viewport with no wrap, which
-   inflated the whole content column and clipped ~70px off-screen with no
-   way to scroll to it. Wrap is a no-op safety net for this class's other
-   (shorter) call sites — confirmed none of them need to actually wrap at
-   any tested width, so this only ever activates when content doesn't fit,
-   never changes the desktop/tablet layout. */
+/* Generic content-sized row (.app-panel-inline-row), right-packed under
+   RTL by default flex-start — no justify-content override needed.
+   flex-wrap added after a confirmed 375px overflow on one call site — see
+   DECISIONS.md, "Screen B was scrolling sideways...cause #1". No-op for
+   the other, shorter call sites. */
 .app-panel-inline-row {
   display: flex;
   flex-wrap: wrap;
@@ -390,10 +217,7 @@
   gap: var(--panel-space-gap);
 }
 
-/* Plain in-panel text (.app-panel-text) — also works as an icon+text flex
-   pairing (e.g. "لقد اخترت:" + its trailing icon): a flex container with a
-   single text child behaves identically to a plain inline label, so one
-   class covers both call sites without a modifier. */
+/* Also doubles as an icon+text pairing — one class covers both cases. */
 .app-panel-text {
   display: inline-flex;
   align-items: center;
@@ -405,16 +229,8 @@
 }
 
 /* ==========================================================================
-   Status card (AppStatusCard) — shared cross-screen pattern (CLAUDE.md
-   §3.1), used by both the 3-card and 4-card rows on Screen A. Reuses
-   .app-panel for the bordered/rounded container (applied alongside this
-   class in AppStatusCard.razor, not duplicated here). Everything below is
-   this component's OWN class names only — no MudBlazor class referenced, so
-   this stays in this file rather than mudblazor-overrides.css (§5). The one
-   exception is the MudProgressCircular ring's stroke/text color, which
-   necessarily reaches into MudBlazor's own generated classes — that part
-   lives in mudblazor-overrides.css instead, scoped under the
-   .app-status-card__ring-circular anchor class emitted here.
+   Status card (AppStatusCard). Reuses .app-panel for the border. Ring
+   stroke/text color lives in mudblazor-overrides.css instead.
    ========================================================================== */
 
 .app-status-card {
@@ -448,9 +264,8 @@
   color: var(--status-card-color-badge-icon);
 }
 
-/* Native <hr> (CLAUDE.md §6 — semantic HTML first): already carries an
-   implicit role="separator", no ARIA needed. Themed with our own tokens only
-   — not a MudBlazor class, so no override-file split needed here. */
+/* Native <hr> — already carries an implicit separator role, no ARIA
+   needed. */
 .app-status-card__divider {
   border: none;
   border-top: var(--field-stroke-width) solid var(--status-card-color-divider);
@@ -464,11 +279,7 @@
   gap: var(--status-card-space-body-gap);
 }
 
-/* Status label + ring share one row — see AppStatusCard.razor's header
-   comment above the markup for the RTL DOM-order reasoning (label first,
-   ring second, so the ring lands visual-left per the Figma reference).
-   justify-content: space-between spreads them to the row's two ends; the
-   gap is a floor for narrow cards, not the normal spacing mechanism. */
+/* Label written first so the ring lands visual-left under RTL. */
 .app-status-card__status-row {
   display: flex;
   align-items: center;
@@ -476,19 +287,14 @@
   gap: var(--status-card-space-body-gap);
 }
 
-/* Wraps MudProgressCircular; carries the accessible role="img"/aria-label
-   (AppStatusCard.razor) since the ring's own visible text (the percentage)
-   and the MudBlazor markup underneath are both marked aria-hidden. */
+/* Carries role="img"/aria-label; the ring and its text are aria-hidden. */
 .app-status-card__ring {
   flex: none;
   display: inline-flex;
 }
 
-/* Fixed dark color regardless of StatusType — NOT color: inherit from the
-   ring. See tokens.css's --status-card-color-ring-value note: the ring's own
-   per-status color fails 4.5:1 for three of the four states, so the actual
-   percentage NUMBER (real text) stays on its own always-safe color instead
-   of following the ring's decorative stroke color. */
+/* Fixed color, not inherited from the ring — 3 of 4 status colors fail
+   contrast as text. */
 .app-status-card__ring-value {
   font-family: var(--status-card-font-family);
   font-size: var(--status-card-font-size-meta);
@@ -496,13 +302,7 @@
   color: var(--status-card-color-ring-value);
 }
 
-/* Remaining MetaRows (status label excluded — it moved to
-   .app-status-card__status-row above) pair up two-per-row: e.g. "مركز
-   الاختبار"/"لـ" side by side, "اخر تشغيل"/"المدة" on the next row —
-   confirmed against TaskOne_from_figma_design.png, not assumed. Reuses
-   --status-card-space-meta-gap for both row-gap and column-gap (no separate
-   column-gap value read off the reference; flag if a distinct one surfaces
-   later). */
+/* Two per row, matching the reference. */
 .app-status-card__meta {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -510,12 +310,9 @@
   min-width: 0; /* allow long meta values to wrap instead of overflowing the grid column */
 }
 
-/* Odd MetaRows count (e.g. the 3-row "جلب CBT" card): the trailing,
-   unpaired item spans both columns rather than sitting alone against one
-   side of the grid — chosen over centering/half-width because it needs no
-   extra alignment rule and works via :nth-child alone, no C# branching on
-   count parity. Flagged as a layout call, not something the Figma
-   reference itself shows (no real card in it has an odd MetaRows count). */
+/* Odd meta-row counts: the trailing unpaired one spans both columns
+   instead of sitting alone. No reference card actually has an odd count.
+   extra branching needed in code. */
 .app-status-card__meta-row:nth-child(odd):last-child {
   grid-column: 1 / -1;
 }
@@ -527,10 +324,7 @@
   font-size: var(--status-card-font-size-meta);
 }
 
-/* Same fixed color for every StatusType — see tokens.css's
-   --status-card-color-status-label note (three of the four raw
-   --status-color-* hues fail 4.5:1 as text; the status WORD itself, not its
-   color, is what differentiates state here). */
+/* Fixed color — the status word, not color, is what tells states apart. */
 .app-status-card__status-label {
   font-weight: var(--status-card-font-weight-status-label);
   color: var(--status-card-color-status-label);
@@ -542,23 +336,10 @@
 }
 
 /* ==========================================================================
-   Sync-actions block (.app-sync-block) — CORRECTED this pass after
-   re-comparing directly against the Figma reference again (CLAUDE.md rule
-   1): ONE single .app-panel wraps BOTH the two sync-action banners AND the
-   3-card CBT status row beneath them — not two separate panels (that was
-   this file's own previous state, based on a misreading of
-   TaskOne_Tablet.png's flattened PNG export). Internal separation is divider
-   LINES only, never gap/margin between boxes:
-     - vertical line between the two banners (border-inline-end)
-     - horizontal line between the banner row and the card row
-       (border-block-end)
-     - vertical lines between the three cards (border-inline-end)
-   The OTHER status-card row further down the page ("صحة خط المزامنة", 4
-   cards) is explicitly NOT part of this pattern — Figma keeps each of
-   those 4 cards individually bordered/gapped, confirmed unchanged. That row
-   stays on the plain .app-status-cards-row grid further below, with
-   AppStatusCard's Bordered="true" default giving each card its own
-   .app-panel border, same as originally built.
+   Sync-actions block (.app-sync-block) — one .app-panel wraps both the
+   sync banners and the 3-card status row, separated by divider lines,
+   not gaps. The separate 4-card row further down stays individually
+   bordered/gapped — see .app-status-cards-row below.
    ========================================================================== */
 .app-sync-block {
   display: flex;
@@ -568,17 +349,11 @@
 .app-sync-actions-row,
 .app-status-cards-row--embedded {
   display: grid;
-  gap: 0; /* dividers replace gap-based spacing entirely, per instruction */
+  gap: 0; /* dividers replace gap-based spacing entirely */
 }
 
-/* minmax(0, 1fr), not bare 1fr, on every grid-template-columns below: a
-   bare `1fr` track is `minmax(auto, 1fr)` per spec, so a card whose content
-   can't shrink to its equal share keeps its min-content width instead,
-   growing the grid's total occupied width past the container and pushing
-   the row's own edge past its parent — found via the tablet-width (768px)
-   responsive re-check on the 4-card row below (CLAUDE.md §7), a pre-existing
-   bug in this shared rule (unrelated to the inline-style removal that
-   prompted the re-check), not limited to that one row. */
+/* minmax(0, 1fr), not bare 1fr — a bare track can't shrink below its
+   content's natural width, found via a tablet-width overflow here. */
 .app-sync-actions-row {
   grid-template-columns: repeat(var(--app-sync-actions-row-count, 2), minmax(0, 1fr));
 }
@@ -599,16 +374,7 @@
     padding-inline-start: 0;
   }
 
-  /* Divider line only (border-inline-end), NOT an individually-boxed/
-     rounded card — reverted back to this session's earlier regression
-     (see DECISIONS.md), which had briefly given every item its own full
-     border + hardcoded padding/radius. That contradicts the "CORRECTED
-     this pass" .app-sync-block comment immediately above this rule block,
-     itself confirmed against the Figma reference: ONE merged panel with
-     divider lines between items, not individually-boxed cards. Restoring
-     the divider-only pattern and tokenizing it (--panel-color-stroke was
-     already correct; --field-stroke-width already correct) fixes both the
-     hardcoded-value violation and the design regression in one change. */
+  /* Divider only — see DECISIONS.md, "Sync dashboard rows". */
   .app-sync-actions-row > *:not(:last-child),
   .app-status-cards-row--embedded > *:not(:last-child) {
     border-inline-end: var(--field-stroke-width) solid var(--panel-color-stroke);
@@ -625,10 +391,7 @@
 }
 
 @media (max-width: 600px) { /* --breakpoint-sm */
-  /* Mobile: no evidence this pass changed — TaskOne_Mobile.png still shows
-     each banner/card individually boxed and stacked, not one tall merged
-     panel, so the outer .app-panel is neutralized here and every cell gets
-     its own panel look back. */
+  /* Mobile reference shows each cell individually boxed and stacked. */
   .app-sync-block.app-panel {
     background-color: transparent;
     border: none;
@@ -655,24 +418,14 @@
   }
 }
 
-/* ---- Standalone status-card row (.app-status-cards-row, no --embedded
-   modifier) — the 4-card "صحة خط المزامنة" row only. Plain grid, normal gap
-   spacing, no dividers, no outer panel — each AppStatusCard supplies its
-   own .app-panel border via Bordered="true" (the default). Column count
-   stays fixed down to 600px (the old max-width:960px 2-column tier stays
-   removed — unrelated to this pass's panel/divider correction, still
-   flagged from the previous turn as a side effect you hadn't confirmed
-   either way). ---- */
+/* Standalone 4-card row — each card supplies its own border, no dividers. */
 .app-status-cards-row {
   display: grid;
   grid-template-columns: repeat(var(--app-status-cards-row-count, 3), minmax(0, 1fr));
   gap: var(--panel-space-gap);
 }
 
-/* "صحة خط المزامنة" row (SyncStatus.razor) is the only 4-card use of this
-   base class — sets the custom property via a class, not an inline style
-   (CLAUDE.md §5: the value lives here, once, instead of also being written
-   inline at the call site). */
+/* Sets column count via a class, not an inline style. */
 .app-status-cards-row--cols-4 {
   --app-status-cards-row-count: 4;
 }
@@ -692,45 +445,20 @@
 }
 
 /* ==========================================================================
-   Stepper (AppStepper / AppStepItem) — shared cross-screen pattern
-   (CLAUDE.md §3.1). One connected horizontal row of step buttons — see
-   AppStepper.razor's header comment for why (real Screen B usage, not the
-   isolated Figma component sheet, settled the layout question).
-   No MudBlazor class referenced anywhere here — see AppStepper.razor's
-   header comment for why this whole feature stays out of
-   mudblazor-overrides.css.
+   Stepper (AppStepper / AppStepItem) — see AppStepper.razor for why.
    ========================================================================== */
 
-/* Positioning context for the connector line, which must sit BEHIND every
-   icon at a fixed height — an <ol> can't take a plain <div> child directly
-   (invalid HTML), so the line lives in this wrapping shell instead. */
+/* Positioning context for the connector line — an <ol> can't take a
+   plain <div> child directly. */
 .app-stepper-shell {
   position: relative;
 }
 
-/* N-1 independent segments (one per gap between adjacent steps), each
-   drawn behind the icons on either side of it (z-index below the list) so
-   every icon's own opaque background fill visually "covers" the segment
-   passing behind it — producing the connected-dots look confirmed in
-   demo/ScreenB/TaskTwo_from_figma_design.png. RESTRUCTURED this pass from a
-   single spanning line: that reference image's connector turned out to be
-   two-color, not one (tokens.css's Stepper section has the full pixel
-   history) — dark leading into Pass/Active/Selected, light gray leading
-   into Disabled — which one element with one background-color can't render.
-   See AppStepper.razor's own header comment for the (i+0.5)/N center-to-
-   center math this positioning relies on.
-
-   GAP — each segment used to span the full center-to-center distance, so
-   adjacent segments touched edge-to-edge with no visible break between them
-   and read as one continuous bar despite being 5 separate elements
-   (confirmed structurally correct, just visually indistinguishable). Both
-   the start position and the width are inset by --stepper-connector-gap / 2
-   (8px) — moving the start inward by 8px and shrinking the width by the
-   full 16px pulls BOTH edges in by 8px each, which removes exactly
-   --stepper-connector-gap of length total without moving the segment's own
-   center point (start + width/2 is unchanged by construction — only length
-   changes), so it stays centered between the same two icon-centers as
-   before. */
+/* N-1 independent segments, drawn behind the icons (z-index below the
+   list) so each icon's background covers the segment behind it. Two
+   colors needed since Disabled's lead-in segment is a different shade —
+   one element can't do that. Start/width inset by half the gap token so
+   segments stay centered with a visible gap between them. */
 .app-stepper__connector-segment {
   position: absolute;
   top: calc(var(--stepper-icon-size) / 2 - var(--stepper-connector-width) / 2);
@@ -744,9 +472,8 @@
   z-index: 0;
 }
 
-/* Segment leading INTO a Disabled step — the state of the step this segment
-   points at (index+1), never the step it leaves FROM, per your rule (see
-   AppStepper.razor's GetState() call at the loop above). */
+/* Colors the segment leading into a Disabled step — based on the state
+   of the step it points at, never the one it leaves from. */
 .app-stepper__connector-segment--disabled {
   background-color: var(--stepper-color-connector-disabled);
 }
@@ -758,25 +485,11 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  /* Many steps on a narrow viewport scroll horizontally instead of
-     wrapping — wrapping would break the connector segments' center-to-center
-     math above (MudStepper's own ScrollableNavigation param does the
-     equivalent for the same reason, confirmed in the installed
-     MudBlazor.xml docs). */
+  /* Scrolls horizontally instead of wrapping, which would break the
+     connector math above. */
   overflow-x: auto;
-  /* ROOT CAUSE of an unwanted vertical scrollbar (with native up/down
-     arrow buttons on Windows' classic scrollbar style), not a cosmetic
-     scrollbar-hiding hack: per the CSS Overflow spec, if only one of
-     overflow-x/overflow-y is 'visible' and the other is neither 'visible'
-     nor 'clip', the 'visible' one computes to 'auto' too — confirmed via
-     getComputedStyle in the live page, which reported overflowY: "auto"
-     here despite this rule never setting it. That silently turned this
-     element into a vertical scroll container as well, which then showed a
-     real (if often sub-pixel) scrollbar the instant any label's line-height
-     rounding pushed scrollHeight even 1px past clientHeight. Explicit
-     overflow-y: hidden removes the vertical scroll container outright — the
-     element can only ever clip on that axis, never scroll it — while
-     leaving the intentional horizontal auto-scroll above untouched. */
+  /* Real bug fix: setting overflow-x alone makes the browser also treat
+     the y-axis as scrollable, producing a stray vertical scrollbar. */
   overflow-y: hidden;
 }
 
@@ -792,12 +505,7 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-8);
-  /* CLAUDE.md §6 — touch target >= 44x44 CSS px, even though the VISIBLE
-     icon circle (--stepper-icon-size) measures 40px — confirmed real, not
-     estimated, see tokens.css. The extra 4px lives in padding around the
-     40px icon + label, not in the icon itself, so the visual size stays
-     exactly what Figma specifies while the actual hit target still clears
-     the minimum. */
+  /* 44x44 touch target even though the visible icon is only 40px. */
   min-width: var(--a11y-touch-target-min);
   min-height: var(--a11y-touch-target-min);
   padding: var(--space-2);
@@ -824,12 +532,7 @@
   white-space: nowrap;
 }
 
-/* ---- Disabled — non-interactive (native <button disabled>, see
-   AppStepItem.razor). Double signal per CLAUDE.md §6 (never color alone):
-   the dedicated disabled color token BELOW, same reduced-opacity treatment
-   already used for --btn-pri-disabled-opacity/--field-disabled-opacity, AND
-   cursor:not-allowed (the UA default for a disabled <button> is only
-   cursor:default, which doesn't read as "locked" on its own). ---- */
+/* Disabled — color plus cursor:not-allowed, never color alone. */
 .app-stepper__btn--disabled {
   opacity: var(--stepper-disabled-opacity);
   cursor: not-allowed;
@@ -844,18 +547,7 @@
   color: var(--stepper-color-text-disabled);
 }
 
-/* ---- Active — the step you're standing on. REVERSED this pass (your
-   explicit confirmed decision): now renders the darkblue--15 family, which
-   tokens.css still names after ITS original Figma role ("selected" —
-   stepper_Selected_txt_bg) — only this class-to-token wiring flipped, not
-   the token values themselves (see tokens.css's Stepper section). Figma
-   only ever gave this color ONE fixed swatch (no hover/onClick variant), so
-   Active is now the single-swatch state — kept as-is across hover/focus/
-   pressed rather than inventing an unrequested tint; the shared focus ring
-   further below still marks focus regardless. Label needs NO safe-contrast
-   substitute: --color-darkblue--15 measures 15.01:1 vs white, comfortably
-   clearing WCAG AA 4.5:1 on its own (recomputed, not assumed — see
-   DECISIONS.md). ---- */
+/* Active — see DECISIONS.md, "Stepper colors" for the color swap. */
 .app-stepper__btn--active .app-stepper__icon {
   background-color: var(--stepper-color-bg-selected);
   color: var(--stepper-color-icon-selected);
@@ -884,28 +576,18 @@
   background-color: var(--stepper-color-bg-pass-active);
 }
 
-/* ---- Selected — the next open step. REVERSED this pass along with Active
-   above: now renders the blue-00/-03/-75 family, which tokens.css still
-   names after ITS original Figma role ("active" — stepper_Active_txt_bg).
-   This is a genuine UX upgrade for Selected, not just a color swap: it went
-   from a single fixed swatch to a real 3-variant hover/pressed family, since
-   that's what came along with the token family it inherited — verify the
-   hover/pressed states actually respond, not just the resting color. ---- */
+/* ---- Selected — the next open step. Swapped with Active above to use
+   the brighter blue color family instead. This is a real upgrade, not
+   just a color swap: it now has a proper 3-variant hover/pressed family,
+   since that's what came bundled with the token family it inherited —
+   worth checking that hover/pressed actually respond, not just the
+   resting color. ---- */
 .app-stepper__btn--selected .app-stepper__icon {
   background-color: var(--stepper-color-bg-active);
   color: var(--stepper-color-icon-active);
 }
 
-/* NOT the "_txt_bg" alias every other state's label uses — the blue-00
-   family measures 3.06:1 vs white at this label's real 16px/regular size,
-   failing WCAG AA 4.5:1 (the 3:1 large-text exception doesn't apply below
-   24px/regular). Same accessibility-driven substitute this problem has
-   always needed (see tokens.css's Stepper section and DECISIONS.md) — it
-   just moved from Active's label to Selected's, along with the color
-   family, which is why the token itself is now named state-agnostically
-   (--stepper-color-text-on-brand-safe, not "-active-safe"). The icon
-   circle above keeps the literal --stepper-color-bg-active unchanged; only
-   this text role needs the substitute. */
+/* Safe-contrast substitute, not the icon's color — see DECISIONS.md. */
 .app-stepper__btn--selected .app-stepper__label {
   color: var(--stepper-color-text-on-brand-safe);
 }
@@ -919,10 +601,7 @@
   background-color: var(--stepper-color-bg-active-active);
 }
 
-/* ---- Focus ring — CLAUDE.md §6 standing rule: the shared ring is layered
-   on top of every state's own Figma colors above, always, never a
-   substitute for them and never skipped because a state already has a
-   strongly-contrasting color of its own. ---- */
+/* Focus ring, layered on top of every state's own colors, always. */
 .app-stepper__btn:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -935,16 +614,8 @@
 }
 
 /* ==========================================================================
-   Alert (AppAlert) — shared cross-screen component (CLAUDE.md §3.1), Screen
-   B's warning/success strips. See tokens.css's own "Alert" section for the
-   anatomy verification (content-sized pill, no border) and color/contrast
-   decisions (accessible dark substitutes, not the literal Figma hues) —
-   not re-derived here.
-
-   No focus-ring rule and no --a11y-touch-target-min here, unlike every
-   other interactive component in this file: this component renders no
-   button/link, just a status pill (role="alert"/"status", see
-   AppAlert.razor), so neither CLAUDE.md §6 rule applies to it.
+   Alert (AppAlert) — see tokens.css's "Alert" section for the colors.
+   No focus ring/touch-target sizing — this is a status pill, not a button.
    ========================================================================== */
 .app-alert {
   display: inline-flex;
@@ -956,12 +627,7 @@
   border-radius: var(--alert-radius);
   font-family: var(--alert-font-family);
   font-size: var(--alert-font-size);
-  /* Content-sized pill, confirmed against the reference (tokens.css) — must
-     NOT stretch to fill a flex/grid parent's full width just because it's a
-     direct flex-item child (e.g. MudStack's default align-items: stretch).
-     flex-start in a column-direction RTL flex parent resolves to the
-     cross-axis START, i.e. the right edge — matching the reference's
-     right-aligned placement without hardcoding a physical side. */
+  /* Content-sized pill — flex-start resolves to the right edge under RTL. */
   align-self: flex-start;
 }
 
@@ -971,9 +637,7 @@
 }
 
 .app-alert__message {
-  /* Long messages wrap inside the pill instead of overflowing or forcing it
-     to stretch full-width — the pill's height is intentionally not fixed,
-     per the content-sized anatomy above. */
+  /* Wraps inside the pill instead of overflowing or forcing full-width. */
   white-space: normal;
 }
 
@@ -996,19 +660,9 @@
 }
 
 /* ==========================================================================
-   Panel divider (.app-panel-divider) — shared cross-screen pattern
-   (CLAUDE.md §3.1): a full-width horizontal rule separating two sections
-   inside ONE merged .app-panel, never a gap/border between separate boxes.
-   First use: Screen B's big merged panel (Model Data + Question
-   Distribution + section-count row, confirmed as ONE .app-panel by scanning
-   its left/right border columns pixel-by-pixel top to bottom with no break
-   anywhere — same "one panel, divider LINES only" finding as Screen A's
-   .app-sync-block) — the one line between the success alert and the "لقد
-   اخترت:" chip row. Native <hr> (CLAUDE.md §6 — semantic HTML first, an
-   <hr> already carries an implicit role="separator", no ARIA needed) — same
-   pattern as AppStatusCard's own .app-status-card__divider, generalized
-   here since a panel-level divider is reusable beyond that one component
-   (CLAUDE.md §3.1's reuse rule of thumb).
+   Panel divider (.app-panel-divider) — a horizontal rule separating two
+   sections inside one merged panel, never a gap between separate boxes.
+   Same pattern as AppStatusCard's own divider, generalized here.
    ========================================================================== */
 .app-panel-divider {
   border: none;
@@ -1018,14 +672,7 @@
 }
 
 /* ==========================================================================
-   Toggle group (AppToggleGroup) — shared cross-screen pattern (CLAUDE.md
-   §3.1), Screen B's "توزيع الأسئلة" mode switch. See AppToggleGroup.razor's
-   header comment for why this is plain semantic <button>s with hand-wired
-   ARIA rather than MudToggleGroup, and for the exact token-reuse reasoning
-   (selected state re-derives AppButton's own blue family; unselected
-   text/icon needs the same --color-blue-1f safe-contrast substitute already
-   used elsewhere in this file — literal blue-00 fails 4.5:1 as text, see
-   tokens.css and DECISIONS.md).
+   Toggle group (AppToggleGroup) — see AppToggleGroup.razor for why.
    ========================================================================== */
 .app-toggle-group {
   display: inline-flex;
@@ -1040,16 +687,8 @@
   align-items: center;
   justify-content: center;
   gap: var(--toggle-space-item-gap);
-  /* flex-basis:auto (not 0): each item's own content sets its minimum share
-     first; flex-grow:1 on both then splits only the LEFTOVER space evenly.
-     BUG FOUND live (not assumed) with flex:1 1 0 — that forces a strict
-     50/50 split regardless of content, and combined with flex's default
-     "automatic minimum size" (min-content, i.e. the width of the single
-     LONGEST WORD, not the full phrase) it let "سحب وإملاء" wrap onto two
-     lines even though the reference never wraps it. white-space: nowrap
-     below closes the same gap from the other side: it makes this item's
-     effective minimum the FULL unbroken phrase width, so flex can no longer
-     satisfy the old "shrink to longest word" reading. */
+  /* flex-basis: auto, not 0 — flex: 1 1 0 forced an even 50/50 split
+     that let "سحب وإملاء" wrap onto two lines, found live. */
   flex: 1 1 auto;
   white-space: nowrap;
   padding-inline: var(--toggle-space-item-padding-inline);
@@ -1074,7 +713,7 @@
 .app-toggle-group__item--selected {
   background-color: var(--toggle-color-bg-selected);
   color: var(--toggle-color-text-selected);
-  border-inline-end-color: transparent; /* the divider line only ever separates two UNselected-look neighbors; against the solid selected fill it would show as a stray notch */
+  border-inline-end-color: transparent; /* the divider only makes sense between two unselected items — against the solid selected fill it'd show as a stray notch */
 }
 
 .app-toggle-group__item:hover:not(:disabled):not(.app-toggle-group__item--selected) {
@@ -1094,25 +733,18 @@
   cursor: not-allowed;
 }
 
-/* CLAUDE.md §6 — visible focus, layered on top of the item's own
-   selected/unselected colors, never a substitute for them (the standing
-   rule already applied to every other interactive component here). */
+/* Visible focus, layered on top of the item's own colors. */
 .app-toggle-group__item:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
-  outline-offset: calc(-1 * var(--focus-ring-width)); /* inset: the group's own overflow:hidden would otherwise clip an outside-offset ring at the pill's rounded edge */
+  outline-offset: calc(-1 * var(--focus-ring-width)); /* inset — the group's own overflow:hidden would otherwise clip an outward ring at the pill's rounded edge */
 }
 
 .app-toggle-group__icon {
   flex: none;
 }
 
-/* Status note on an option that's selectable/visible but not yet wired up
-   (e.g. "(قريباً)" on "سحب وإملاء" — see DECISIONS.md). No separate color
-   token: inherits the item's own already-contrast-safe text color
-   (white when selected, --toggle-color-text-unselected otherwise) rather
-   than risking a new independent color failing contrast against the
-   selected item's blue fill — CLAUDE.md §6 is satisfied by the TEXT
-   itself, not by dimming/color alone. */
+/* Status note (e.g. "(قريباً)") — see DECISIONS.md, "Question-bank
+   transfer". Inherits the item's own text color, no new token. */
 .app-toggle-group__note {
   margin-inline-start: var(--space-8);
 }
@@ -1124,10 +756,8 @@
 }
 
 /* ==========================================================================
-   Chip (AppChip) — shared cross-screen pattern (CLAUDE.md §3.1), Screen B's
-   "نموذج 1" tag. Purely static (see AppChip.razor's header comment) — no
-   button/focus-ring/touch-target rules, since this renders no interactive
-   element.
+   Chip (AppChip) — Screen B's "نموذج 1" tag. Purely static — no button,
+   focus-ring, or touch-target rules, since it renders nothing interactive.
    ========================================================================== */
 .app-chip {
   display: inline-flex;
@@ -1153,15 +783,10 @@
 }
 
 /* ==========================================================================
-   Tag (.app-tag) — shared cross-screen pattern (CLAUDE.md §3.1), the small
-   solid-fill pills on Screen B's question-bank cards ("AudioTest" /
-   "سؤال-2" / "بنك اسئلة"). Deliberately NOT AppChip: AppChip is a single
-   light-tint pill with an optional icon; these are a different, simpler,
-   two-color-variant pattern with no icon — see AppQuestionCard.razor's
-   header comment for the full "why not reuse AppChip" reasoning. Plain CSS
-   classes, no Razor component: "simple enough it doesn't need its own
-   states" (the same reasoning AppChip's own header comment already applies
-   to itself) fits a bare colored span even more.
+   Tag (.app-tag) — the small solid-fill pills on Screen B's question-bank
+   cards ("AudioTest" / "سؤال-2" / "بنك اسئلة"). Deliberately not AppChip —
+   see AppQuestionCard.razor's header comment for why. Simple enough it's
+   just plain CSS classes, no Razor component needed.
    ========================================================================== */
 .app-tag {
   display: inline-flex;
@@ -1185,10 +810,8 @@
 }
 
 /* ==========================================================================
-   Question card (AppQuestionCard) — shared cross-screen pattern (CLAUDE.md
-   §3.1), Screen B's question-bank list items. See AppQuestionCard.razor's
-   header comment for the full anatomy/reasoning (drag handle flagged as
-   unconfirmed, checkbox as native <input>, etc.).
+   Question card (AppQuestionCard) — Screen B's question-bank list items.
+   See AppQuestionCard.razor's header comment for the full anatomy.
    ========================================================================== */
 .app-question-card {
   display: flex;
@@ -1200,17 +823,16 @@
   background-color: var(--panel-color-bg);
 }
 
-/* Decorative only this pass (CLAUDE.md rule per instruction — "no actual
-   drag behavior yet"): plain default cursor, not `grab`, so the card
-   doesn't visually promise a working interaction it doesn't have yet. */
+/* Decorative only for now — plain default cursor, not `grab`, so this
+   doesn't visually promise a drag interaction that doesn't work yet. */
 .app-question-card__drag-handle {
   flex: none;
   color: var(--qcard-color-drag-handle);
 }
 
-/* Padded to the full touch-target minimum even though the visible checkbox
-   stays small (CLAUDE.md §6) — a native <label> wrapping the <input> means
-   clicking anywhere in this padded area toggles it, no JS required. */
+/* Padded to the full touch-target minimum even though the visible
+   checkbox stays small — a native label wrapping the input means
+   clicking anywhere in this padded area toggles it, no JS needed. */
 .app-question-card__select {
   display: inline-flex;
   align-items: center;
@@ -1230,7 +852,7 @@
   cursor: pointer;
 }
 
-/* CLAUDE.md §6 — visible focus on the actual interactive element. */
+/* Visible focus on the actual interactive element. */
 .app-question-card__checkbox:focus-visible {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
@@ -1260,34 +882,11 @@
 }
 
 /* ==========================================================================
-   Question-bank columns (.app-qbank-column) — shared cross-screen pattern
-   (CLAUDE.md §3.1), Screen B's 3-column layout under "مجمع بنوك العناصر".
-   Sits inside the SAME merged .app-panel as the rest of this pass's work
-   (see the markup's own header comment for the border-scan evidence this
-   continues, not closes, that panel) — each column is its OWN bordered
-   sub-box, unlike the divider-LINES-only pattern used further up.
-
-   NO wrapping Blazor component for a "column" — the 3 columns differ
-   enough in real content (2 empty-state vs. 1 populated scrollable list,
-   different header controls) that forcing them through one parameterized
-   component would mean more conditional branches than markup saved
-   (CLAUDE.md: don't design a premature abstraction for 3 known, different
-   call sites).
+   Question-bank columns (.app-qbank-column) — 3-column layout, each its
+   own bordered sub-box. No wrapping Blazor component — the 3 columns
+   differ too much in content to share one parameterized component.
    ========================================================================== */
-/* minmax(0, 1fr), not bare 1fr — found live (not assumed) via a 375px
-   scrollWidth/clientWidth check (445 vs 375, a real 70px clip with no
-   scrollbar to reach it): bare `1fr` computes as `minmax(auto, 1fr)`, so
-   each track's MINIMUM is its own content's min/max-content size. With
-   .app-qbank-column containing a MudBlazor outlined search field (its
-   label/fieldset alone floor it well past what fits in a narrow track),
-   that floor exceeded both the 375px mobile viewport (grid blowout, no
-   overflow clipping anywhere above it) and, at 800px tablet, exceeded an
-   equal third — forcing the two empty-state columns down to ~136px each
-   while "بنك العناصر" claimed the rest. minmax(0, 1fr) removes the
-   content-based floor so tracks actually distribute the available space;
-   .app-qbank-column's own min-width: 0 below is required alongside this —
-   a grid item's DEFAULT min-width is also content-based regardless of its
-   track's minmax, so both need fixing together, not just the track. */
+/* minmax(0, 1fr), not bare 1fr — see DECISIONS.md, "cause #2". */
 .app-qbank-columns {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1303,16 +902,14 @@
 .app-qbank-column {
   display: flex;
   flex-direction: column;
-  min-width: 0; /* see the grid-blowout note above .app-qbank-columns */
+  min-width: 0; /* see .app-qbank-columns note above */
   gap: var(--qbank-column-space-header-gap);
   padding: var(--qbank-column-space-padding);
   border-radius: var(--panel-radius);
 }
 
-/* Empty state (columns "قسم الأول"/"قسم الثاني") — NEUTRAL gray dashed
-   border, not the reference's literal red/pink (see tokens.css's own note
-   on --qbank-color-border-empty — flagged UX-audit issue, deliberately not
-   reproduced). */
+/* Neutral gray dashed border, not the reference's red/pink — a known
+   UX-audit issue, deliberately not reproduced. See tokens.css. */
 .app-qbank-column--empty {
   border: var(--field-stroke-width) dashed var(--qbank-color-border-empty);
 }
@@ -1351,30 +948,23 @@
   font-weight: var(--qbank-font-weight-subtitle);
 }
 
-/* Decorative only this pass — no menu behavior wired up yet (same
-   "structure now, interaction later" scope as the drag handle above). */
+/* Decorative only for now — no menu behavior wired up yet. */
 .app-qbank-column__menu-icon {
   flex: none;
   color: var(--qbank-color-subtitle);
 }
 
-/* "تحديد الكل" (static, out of this pass's scope) / "نقل المحدد" &
-   "إرجاع المحدد" (real "اختيار متعدد" transfer controls — CLAUDE.md §6,
-   see QuestionDistribution.razor's TransferCheckedToSectionOne/
-   ReturnCheckedToPool). Base typography shared by the static span and the
-   real <button>s below. */
+/* Shared typography for the static "تحديد الكل" span and the real
+   transfer buttons below (see QuestionDistribution.razor). */
 .app-qbank-column__link {
-  color: var(--chip-color-text); /* same safe blue-1f link color already used elsewhere */
+  color: var(--chip-color-text); /* same safe blue link color used elsewhere */
   font-family: var(--qbank-font-family);
   font-size: var(--qbank-font-size-subtitle);
   white-space: nowrap;
 }
 
-/* <button> reset so "نقل المحدد"/"إرجاع المحدد" keep the plain-text look
-   above instead of native button chrome, plus the shared focus-ring/
-   touch-target rules every other interactive element in this file uses.
-   Disabled (nothing checked yet) reuses the same muted color the old
-   static mockup hardcoded, now driven by real state instead of a class. */
+/* Button reset for the plain-text look above; disabled reuses the same
+   muted color an earlier static mockup hardcoded, now real state. */
 .app-qbank-column__link--action {
   display: inline-flex;
   align-items: center;
@@ -1396,11 +986,8 @@
   outline-offset: var(--focus-ring-offset);
 }
 
-/* CLAUDE.md §6 — never color/shape alone: the reference's empty columns
-   show no text at all, relying purely on the dashed outline to communicate
-   "empty." Added text here (not in the reference — a deliberate,
-   accessibility-driven addition, same spirit as the DECISIONS.md contrast
-   fixes) so the state is also communicated in words, not just a shape. */
+/* Reference shows no text here, only a dashed outline — text added since
+   status shouldn't be shape/color alone. */
 .app-qbank-empty-state {
   flex: 1 1 auto;
   min-height: var(--qbank-empty-min-height);
@@ -1428,7 +1015,7 @@
   }
 }
 
-/* appaction banner title and description */
+/* Action banner title and description text. */
 .app-action-banner__title {
   font-size: var(--font-size-regular-18);
   font-weight: var(--font-weight-medium);
