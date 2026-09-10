@@ -12,6 +12,60 @@ pixel-crop evidence live in each entry itself, not just this summary.
 
 ## Summary
 
+- **Final pre-submission Figma comparison — no regression found** — visual
+  pass of both screens at 1920px against `TaskOne_from_figma_design.png`,
+  `TaskTwo_from_figma_design.png`, and the rougher `UI _UX.jpeg`/`UI_ UX
+  2.jpeg` wireframes, specifically re-checking everything this session's
+  fixes touched. Confirmed, not assumed: header cluster position/order
+  match Figma exactly (independent confirmation of the entry below — this
+  is the first time that entry's claim was checked against the actual
+  image, not just a live measurement of the DOM); the restored
+  divider-line pattern on the sync-actions/status-cards row matches Figma
+  exactly (thin vertical dividers, not individually-boxed cards — direct
+  evidence the reverted regression really was a regression); the separate
+  4-card "صحة خط المزامنة" row is still correctly individually-boxed,
+  unaffected; the toggle group's order/selected-state (سحب وإملاء
+  blue/selected on the left, اختيار متعدد white on the right) matches
+  Figma exactly, `(قريباً)` addition included with no layout break; and
+  the qbank column order from the reordering task earlier this session
+  (مجمع بنك العناصر → قسم الاول → قسم الثاني, right to left) matches
+  `UI_ UX 2.jpeg` exactly — confirmed against the actual reference image
+  for that section for the first time, not only against the verbal
+  instruction that prompted the reorder.
+- **Field focus-ring scoping corrected — Date only, not every field Type**
+  — a prior pass had set `.app-field-input:focus-within{outline:none}`,
+  silently dropping the shared ring for Text/Select too, not just Date.
+  Restored the ring as the default for all field Types; the Date-only
+  suppression now lives in a separate, more specific
+  `.app-field-input--date:focus-within{outline:none}` rule.
+- **`.app-sync-actions-row`/`.app-status-cards-row--embedded` item
+  separators — regression found and reverted** — a prior pass had replaced
+  the established divider-line pattern (`border-inline-end` between items)
+  with every item getting its own full `border`+hardcoded `padding:
+  16px`+`border-radius: 8px`, contradicting this same file's own
+  Figma-verified "one merged panel, divider lines only" finding for this
+  exact block. Reverted to divider-only, tokenized (`--panel-color-stroke`,
+  `--field-stroke-width`), and the now-identical `:last-child`/
+  `:not(:last-child)` rules merged into one.
+- **Screen B mobile/tablet horizontal overflow — two independent causes,
+  both fixed** — 1) `.app-panel-inline-row` (toggle-group + alert under
+  "توزيع الأسئلة") had no `flex-wrap`; 2) `.app-qbank-columns` used bare
+  `1fr` grid tracks, whose content-based minimum let the search field
+  floor a column's width past the viewport (375px) or past an even split
+  (800px tablet: 395/136/136px instead of equal thirds). Fixed with
+  `flex-wrap: wrap` and `minmax(0, 1fr)` + `min-width: 0` respectively.
+  Confirmed via `scrollWidth`/`clientWidth` (375/375 now, was 445/375) and
+  re-measured column widths, not eyeballed — the first fix alone didn't
+  move the overflow number at all, which is what surfaced the second cause.
+- **Inline style on the "لقد اخترت"/"عدد الاقسام" stack wrapper replaced
+  with `utilities.css` classes** — see the dedicated entry below for why
+  `utilities.css` (not a new `components.css` class) was the right home.
+- **AppHeader row-reverse mirroring — confirmed as final design, comment
+  corrected** — the cluster's on-screen POSITION was never intended to
+  move (still the edge away from the sidebar, same as the entry below);
+  only the internal item order mirrors. The CSS comment briefly claimed a
+  position change that a live measurement disproved — comment corrected,
+  no code change.
 - **Date field Selected state repointed to FillOut's gray (product
   decision, not accessibility/unconfirmable)** — literal Figma
   `Picker_Selected_stroke`/`Labletxt` (blue) intentionally overridden so
@@ -54,6 +108,266 @@ pixel-crop evidence live in each entry itself, not just this summary.
 - **AppStepper Active label color** — literal blue-00 fails 4.5:1 as label
   text; substituted the existing `--color-blue-1f`. The icon circle keeps
   the literal color (non-text, 3:1 is enough).
+
+---
+
+## Field focus-ring scoping corrected — Date only, not every field Type (fixed a live §6 regression)
+
+**Component:** `AppField` (`wwwroot/styles/components.css`,
+`.app-field-input:focus-within` / `.app-field-input--date:focus-within`).
+
+**Found during:** a pre-submission cleanup re-scan, not part of any single
+feature task — flagged because the file's own comment directly above the
+rule ("visible focus, not just outline:none") contradicted the rule's own
+declaration (`outline: none`) sitting right below it.
+
+**Problem found:** an earlier pass evidently intended to remove the shared
+`--focus-ring-*` outline for the Date field specifically (Date's Focused
+state already gets a strong, Figma-specified border/bg color change from
+`mudblazor-overrides.css`), but the `outline: none` was written on
+`.app-field-input:focus-within` — the shared base selector every field
+Type resolves through — not a Date-scoped one. Effect: Text and Select
+fields silently lost their focus ring too, a direct violation of CLAUDE.md
+§6's explicit checklist item ("visible focus state, not just outline:none
+removed") and the standing rule that the component's own Figma colors and
+the shared ring are independent layers, never a substitute for each other.
+
+**Decision:** restored `outline: var(--focus-ring-width) solid
+var(--focus-ring-color)` on `.app-field-input:focus-within` as the default
+for every field Type. Added a separate, more specific
+`.app-field-input--date:focus-within { outline: none; }` rule directly
+below it (same specificity as the base rule — 0,2,0 either way — so this
+relies on source order, not a specificity trick, to win only for Date).
+This is a deliberate, explicit override of the §6 standing rule for Date
+only: Date's own Focused border/bg/label/icon colors
+(`--field-color-*-focused`) are treated as sufficient on their own for
+this one field Type, per direct instruction — not a rule I'd apply to a
+new component without an equivalent explicit call, since it goes against
+the standing "always both layers" rule everywhere else in this file.
+
+**Verified:** Text/Select fields show the shared ring on Focused again
+(confirmed via rebuilt `dist/product-ui.min.css`, then live in the
+running app); Date shows no outline on Focused, only its own blue
+border/bg/label change, unchanged from before this fix.
+
+---
+
+## `.app-sync-actions-row` / `.app-status-cards-row--embedded` — item-separator regression found and reverted
+
+**Component:** the "صحة خط المزامنة" 4-card row and the sync-actions
+banner row (`wwwroot/styles/components.css`, inside `.app-sync-block`).
+
+**Found during:** the same pre-submission cleanup re-scan — flagged
+because the fix contradicted this file's own "CORRECTED this pass"
+comment block sitting directly above it (the one documenting that this
+whole area was fixed to use ONE merged panel with divider LINES between
+items, not individually-boxed cards, confirmed against the Figma
+reference in an earlier pass).
+
+**Problem found:** an intervening edit had replaced the divider-line rule
+(`border-inline-end` on every item except the last) with every item
+getting a full `border` + hardcoded `padding: 16px` + `border-radius:
+8px` — i.e., individually-boxed/rounded cards, the exact pattern the
+comment above it says was already corrected away from. It also
+introduced two problems independent of the visual regression: `16px`/
+`8px` are raw pixel literals duplicating `--panel-space-gap` (`16px`) and
+`--panel-radius` (`var(--radius-8)`, `8px`) which already existed and are
+used elsewhere in this same file (CLAUDE.md §4/rule 5), and the
+`:last-child`/`:not(:last-child)` rules had become byte-for-byte
+identical, making the split pointless. A `gap: var(--panel-space-gap)`
+had also been added to `.app-sync-actions-row`, which double-spaces
+against divider lines (this block's own comment: "dividers replace
+gap-based spacing entirely").
+
+**Decision:** reverted to the documented, Figma-verified pattern —
+`border-inline-end: var(--field-stroke-width) solid
+var(--panel-color-stroke)` on `:not(:last-child)` only, no per-item
+padding/radius/full-border, and removed the added `gap`. Merged
+`:last-child`/`:not(:last-child)` into the single `:not(:last-child)`
+selector needed for a divider (there's nothing left to say about
+`:last-child` once it's not getting its own box). This both fixes the
+token violation and restores the already-correct design in one change,
+rather than tokenizing a design that contradicted the file's own
+established finding.
+
+**Verified:** confirmed the merged rule appears in the rebuilt
+`dist/product-ui.min.css` with `border-inline-end` (not `border`) and no
+`16px`/`8px` literals; live screenshot shows divider lines between the
+sync-action banners and between the 4 embedded cards, no individually
+boxed/rounded look.
+
+---
+
+## Screen B mobile (375px) horizontal overflow — `.app-panel-inline-row` now wraps
+
+**Component:** the "توزيع الأسئلة" toggle-group + alert row
+(`demo/ScreenB/QuestionDistribution.razor`, using the shared
+`.app-panel-inline-row` class from `wwwroot/styles/components.css`).
+
+**Found during:** the same pre-submission cleanup re-scan's responsive
+verification pass — measured, not eyeballed: at 375px, the real scroll
+container (`.content-scroll`, the app's own internal scroll div — NOT
+`document.body`, which stays fixed at viewport height) had `scrollWidth:
+445` against `clientWidth: 375`, a 70px overflow with no horizontal
+scrollbar exposing it. Screenshots confirmed the toggle group's own text
+truncated off-screen, and downstream content (the qbank search fields)
+visibly shifted/clipped as a side effect of the same root cause.
+
+**Problem found:** `.app-panel-inline-row` (`wwwroot/styles/components.css`)
+is a plain `display: flex` row with no `flex-wrap`, originally sized for
+short "couple of items, right-packed" content (its own header comment:
+the "لقد اخترت: [chip]" and "عدد الاقسام: [button]" rows). It's also
+reused to wrap `<AppToggleGroup>` (two pill buttons, `white-space: nowrap`
+by design — see that component's own note on why) + `<AppAlert>` (a full
+sentence) — combined content wider than 375px with nothing to wrap it,
+which inflated the whole containing column and clipped everything after
+it by the same amount.
+
+**Decision:** added `flex-wrap: wrap` to `.app-panel-inline-row` itself
+(the shared class, not a new one-off class) rather than splitting the
+toggle+alert pairing into its own class — checked all 6 use sites first
+(the two short rows above, the three qbank column header action rows,
+and this one); none of the other five need to actually wrap at any tested
+width, so this is a no-op safety net for them and only changes layout
+where content doesn't fit. Matches the class's own stated intent (CLAUDE.md
+§3.1 — generic, reused rather than forked per call site).
+
+**Verified after rebuild:** toggle group and alert now stack on separate
+lines at 375px with no clipping — that part of the fix is confirmed
+correct and necessary. But re-measuring `scrollWidth`/`clientWidth`
+afterward still showed 445/375, the exact same 70px — this fix alone did
+NOT resolve the overflow. See the next entry: a second, independent
+overflow source in the same page turned out to be the one actually
+producing that specific 70px number; both needed fixing. Screen A had no
+equivalent issue at any width either way.
+
+---
+
+## Screen B mobile/tablet — second, independent overflow cause: `.app-qbank-columns` grid track blowout
+
+**Component:** `.app-qbank-columns` / `.app-qbank-column`
+(`wwwroot/styles/components.css`).
+
+**Found during:** re-verifying the previous entry's fix. The
+`.app-panel-inline-row` flex-wrap fix visibly worked (confirmed via
+screenshot) but the measured 70px overflow (`scrollWidth: 445` vs
+`clientWidth: 375`) was completely unchanged afterward — proof the
+toggle+alert row wasn't the (or wasn't the only) actual source of that
+number. Traced by walking every descendant of `.content-scroll` and
+flagging any whose rendered box extended past the container's own edges:
+every `.app-qbank-column` measured 395px wide inside a 375px viewport,
+regardless of the toggle/alert fix.
+
+**Problem found:** `.app-qbank-columns` used bare `1fr` tracks
+(`grid-template-columns: repeat(3, 1fr)` desktop/tablet, `1fr` mobile).
+Bare `1fr` computes as `minmax(auto, 1fr)` — each track's MINIMUM is its
+own content's min/max-content size, not 0. `.app-qbank-column` contains a
+MudBlazor outlined search field whose label/fieldset floor its own
+min-content width well past what fits in a narrow track. At 375px
+(single-column grid), that floor (395px) exceeded the viewport outright —
+a grid track is allowed to overflow its own explicit grid container with
+nothing clipping it, so the whole column visibly bled 70px past the left
+edge with no scrollbar reaching it (this IS the 445-vs-375 number from
+the previous entry — a coincidental same-magnitude overlap with the
+toggle/alert issue, not the same root cause). At 800px (three tracks),
+the same mechanism explains the tablet column-width imbalance flagged in
+the pre-submission audit: "مجمع بنك العناصر" (content-heavy) claimed 395px
+while "قسم الاول"/"قسم الثاني" (empty-state, smaller min-content) were
+squeezed to 136px each — never an even three-way split, because `1fr`
+was never actually free to distribute space evenly once a content floor
+exceeded its "fair share."
+
+**Decision:** changed every `1fr` in `.app-qbank-columns` to `minmax(0,
+1fr)` (both the 3-column and the 1-column mobile rule), and added
+`min-width: 0` to `.app-qbank-column` itself — a grid item's own default
+min-width is also content-based independent of its track's minmax, so
+both needed fixing together, not just the track. This removes the
+content-based floor entirely so tracks distribute the actual available
+space; `.app-field { width: 100% }` (already existing) then sizes the
+search field to whatever width the now-correctly-fitted column resolves
+to, rather than the column being forced to fit the field.
+
+**Verified after rebuild:** `.content-scroll` `scrollWidth === clientWidth`
+(375/375) confirmed on both screens at all three widths. Qbank column
+widths: desktop 509/509/509px (unchanged — was already even), tablet now
+223/223/223px (was 395/136/136), mobile 275/275/275px stacked (was
+395px each, offset -70px off-screen). Screenshots confirm no clipping,
+search fields fully visible and centered at every width, RTL order
+(بنك العناصر → قسم الاول → قسم الثاني, right to left / top to bottom)
+unchanged.
+
+---
+
+## Inline style on the "لقد اخترت"/"عدد الاقسام" stack — moved to `utilities.css`, not a new `components.css` class
+
+**Component:** `demo/ScreenB/QuestionDistribution.razor`'s wrapper around
+the "لقد اخترت: [chip]" and "عدد الاقسام: [button]" rows.
+
+**Problem found:** `<div style="display: flex; flex-direction: column;
+gap: 16px; align-items: flex-start; padding: 16px">` — a page-specific
+inline style, with `16px` hardcoded twice even though
+`--panel-space-gap`/`--panel-space-padding` (both `16px`) already existed.
+Direct violation of CLAUDE.md §3 ("no page-specific CSS... belongs in the
+shared library") and §4/rule 5 (raw pixel literal duplicating an existing
+token).
+
+**Decision — `utilities.css`, not `components.css`:** the pattern here
+("stack a couple of rows vertically with the panel's own gap/padding") is
+generic layout, not a named visual component — no button/card/badge
+identity to it the way everything already in `components.css` has one.
+`utilities.css` was still an empty stub despite CLAUDE.md §3 requiring it
+populated with "Bootstrap-like helpers: spacing, display, alignment,
+flex/grid" — this is exactly that category, so it's `utilities.css`'s
+first real content rather than another one-off `components.css` class.
+Added four atomic, single-property classes (`.u-flex-column`,
+`.u-items-start`, `.u-gap-panel`, `.u-p-panel`) instead of one composed
+class, so a future similar need can mix-and-match rather than getting a
+5th near-duplicate composed class — matches the "Bootstrap-like helpers"
+brief in `utilities.css`'s own header comment more literally than a
+component class would.
+
+**Verified:** confirmed all four classes compile into the rebuilt
+`dist/product-ui.min.css`; live screenshot shows the same visual result
+as the inline style (unchanged layout), just token-driven instead of
+hardcoded.
+
+---
+
+## AppHeader row-reverse mirroring — confirmed as final design; misleading comment corrected
+
+**Component:** `AppHeader` (`Components/AppHeader.razor.css`'s
+`.app-header-bar` rule) — the `flex-direction: row-reverse` +
+`justify-content: flex-start` change made after the entry below (the
+original "pinned to the wrong edge" fix).
+
+**Found during:** the same pre-submission cleanup re-scan. The CSS
+comment attached to this change claimed the cluster was now moved to sit
+"flush against the sidebar edge" — a position change. A live Playwright
+measurement (`getBoundingClientRect` on every header child at 1920px,
+800px, and 375px) shows the cluster still renders at the same low-x edge,
+away from the sidebar, as it did after the original `flex-end` fix below
+— its position never moved. Only the cluster's internal item order
+changed (now reads avatar→bell→gear→switch→sync left-to-right instead of
+the reverse), because `flex-direction: row-reverse` reverses which end of
+the row `justify-content` treats as "start" AND reverses DOM display
+order at the same time — two independent effects the original comment
+conflated into one ("mirrors position AND order") when only the order
+half is real.
+
+**Decision:** this is confirmed as the intended final behavior, not a bug
+to chase further — mirroring the cluster's internal reading order (so it
+still reads "first item nearest the reader" in the new arrangement) was
+the actual goal; moving the cluster to the opposite edge was never
+separately requested and isn't what the original "pinned to the wrong
+edge" fix (below) was about undoing. No code change. The CSS comment
+itself has been corrected to describe the real, verified effect (order
+mirrors, position unchanged) instead of the disproven "moved to the
+sidebar edge" claim, so it doesn't mislead a future pass into "fixing" a
+position that was never supposed to change.
+
+**Verified:** position unchanged (cluster still at the edge away from the
+sidebar) at 1920/800/375px; internal order confirmed mirrored at all
+three widths via the same measurement.
 
 ---
 
@@ -181,6 +495,27 @@ a visual-only mockup, unchanged, out of scope for this pass — no
 drag/mouse-move logic was added, per the reasoning already logged
 elsewhere in this file (no spec available for its exact interaction
 rules).
+
+**UPDATE — UI-legible affordance added, addressing a real completeness-
+optics gap:** the scope reasoning above is sound, but was only legible by
+reading this file — someone clicking "سحب وإملاء" directly (the realistic
+grading path) got a toggle that visually activates with zero behavior
+change and no signal that anything is intentionally unfinished, which
+reads as a bug rather than a documented boundary. Added an optional `Note`
+to `AppToggleOption<T>` (`Components/AppToggleOption.cs`), rendered as
+`(قريباً)` next to the option's own label inside the button
+(`Components/AppToggleGroup.razor`) — chosen over a `disabled` option
+because "درag" is also the pixel-confirmed DEFAULT selected value for this
+control, and disabling the currently-selected/roving-tabindex item would
+have required extra logic to keep the group's own keyboard semantics
+(APG radiogroup roving tabindex, arrow-key navigation) correct without a
+real second usage to verify against; a visible note achieves the same
+"legible in the UI" goal without touching that logic. No separate color
+token for the note — it inherits the item's own already-contrast-verified
+text color (white when selected, `--toggle-color-text-unselected`
+otherwise) per CLAUDE.md §6 ("text, not color, alone") and §4/rule 5
+(reuse over a new token that would need re-verifying against the selected
+item's blue fill).
 
 **TARGET SECTION — flagged assumption, not read off a reference that shows
 one:** `demo/ScreenB/UI_ UX 2.jpeg` (the only reference showing this area)

@@ -129,8 +129,8 @@
     <div class="app-panel">
         <div class="app-panel-header">
             <h2 class="app-panel-header__title">
-                بيانات النموذج
                 <MudIcon Icon="@Icons.Material.Outlined.Info" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+                بيانات النموذج
             </h2>
             <AppButton>حفظ البيانات</AppButton>
         </div>
@@ -187,12 +187,13 @@
            ======================================================================== *@
         <div class="app-panel-header">
             <h2 class="app-panel-header__title">
-                توزيع الأسئلة
                 <MudIcon Icon="@Icons.Material.Filled.Terminal" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+                توزيع الأسئلة
             </h2>
         </div>
 
-        <AppToggleGroup T="string"
+        <div class="app-panel-inline-row">
+            <AppToggleGroup T="string"
                          Options="@_distributionOptions"
                          SelectedValue="@_distributionMode"
                          SelectedValueChanged="@(v => _distributionMode = v)"
@@ -200,6 +201,8 @@
 
         <AppAlert Severity="AppAlertSeverity.Success"
                   Message="اختر عدة أسئلة باستخدام مربعات الاختيار، ثم قم بتعبئتها دفعة واحدة" />
+
+        </div>
 
         <hr class="app-panel-divider" />
 
@@ -209,10 +212,11 @@
            not a pixel-exact icon match (see DECISIONS.md). DOM order
            confirmed: the "لقد اخترت:"+icon label sits at the row's own
            right edge, the chip to its left. *@
-        <div class="app-panel-inline-row">
+        <div class="u-flex-column u-items-start u-gap-panel u-p-panel">
+            <div class="app-panel-inline-row">
             <span class="app-panel-text">
-                لقد اخترت:
                 <MudIcon Icon="@Icons.Material.Filled.ChromeReaderMode" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+                لقد اخترت:
             </span>
             <AppChip Text="@_selectedModelChipText" Icon="@Icons.Material.Filled.InsertDriveFile" />
         </div>
@@ -224,6 +228,8 @@
             <span class="app-panel-text">عدد الاقسام: @_sectionCount</span>
             <AppButton>إضافة قسم جديد</AppButton>
         </div>
+        </div>
+        
 
         @* ========================================================================
            "مجمع بنوك العناصر" three-column layout — panel stays OPEN from
@@ -302,40 +308,33 @@
            source image's compression (same "close enough to demonstrate the
            real pattern" precedent already used elsewhere in this file). *@
         <div class="app-qbank-columns">
-            <div class="app-qbank-column @(_sectionTwoItems.Count == 0 ? "app-qbank-column--empty" : "app-qbank-column--populated")">
+            <div class="app-qbank-column app-qbank-column--populated">
                 <div class="app-qbank-column__header">
                     <div class="app-qbank-column__title-group">
-                        <h3 class="app-qbank-column__title">قسم الثاني</h3>
-                        <p class="app-qbank-column__subtitle">@_sectionTwoItems.Count السؤال/الأسئلة</p>
+                        <h3 class="app-qbank-column__title">مجمع بنك العناصر</h3>
+                        <p class="app-qbank-column__subtitle">@_questionBankItems.Count السؤال/الأسئلة</p>
                     </div>
-                    @if (_sectionTwoItems.Count == 0)
-                    {
-                        <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
-                    }
-                    else
-                    {
-                        <div class="app-panel-inline-row">
-                            <span class="app-qbank-column__link">تحديد الكل</span>
-                            <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
-                                    disabled="@(!_sectionTwoItems.Any(i => i.Checked))"
-                                    @onclick="@(() => ReturnCheckedToPool(_sectionTwoItems))">
-                                إرجاع المحدد «
-                            </button>
-                        </div>
-                    }
+                    <div class="app-panel-inline-row">
+                        <span class="app-qbank-column__link">تحديد الكل</span>
+                        <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
+                                disabled="@(!_questionBankItems.Any(i => i.Checked))"
+                                @onclick="TransferCheckedToSectionOne">
+                            نقل المحدد »
+                        </button>
+                    </div>
                 </div>
 
-                <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionTwo" ValueChanged="@(v => _searchSectionTwo = v)"
+                <AppField T="string" Type="AppFieldType.Text" Label="ابحث بنص السؤال" Value="@_searchQuestionBank" ValueChanged="@(v => _searchQuestionBank = v)"
                           AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
 
-                @if (_sectionTwoItems.Count == 0)
+                @if (_questionBankItems.Count == 0)
                 {
                     <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
                 }
                 else
                 {
                     <div class="app-qbank-column__list">
-                        @foreach (var item in _sectionTwoItems)
+                        @foreach (var item in _questionBankItems)
                         {
                             <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
                                              SecondaryTagLabel="@item.SecondaryTagLabel"
@@ -392,33 +391,40 @@
                 }
             </div>
 
-            <div class="app-qbank-column app-qbank-column--populated">
+            <div class="app-qbank-column @(_sectionTwoItems.Count == 0 ? "app-qbank-column--empty" : "app-qbank-column--populated")">
                 <div class="app-qbank-column__header">
                     <div class="app-qbank-column__title-group">
-                        <h3 class="app-qbank-column__title">مجمع بنك العناصر</h3>
-                        <p class="app-qbank-column__subtitle">@_questionBankItems.Count السؤال/الأسئلة</p>
+                        <h3 class="app-qbank-column__title">قسم الثاني</h3>
+                        <p class="app-qbank-column__subtitle">@_sectionTwoItems.Count السؤال/الأسئلة</p>
                     </div>
-                    <div class="app-panel-inline-row">
-                        <span class="app-qbank-column__link">تحديد الكل</span>
-                        <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
-                                disabled="@(!_questionBankItems.Any(i => i.Checked))"
-                                @onclick="TransferCheckedToSectionOne">
-                            نقل المحدد »
-                        </button>
-                    </div>
+                    @if (_sectionTwoItems.Count == 0)
+                    {
+                        <MudIcon Icon="@Icons.Material.Filled.MoreHoriz" Color="Color.Inherit" Class="app-qbank-column__menu-icon" aria-hidden="true" />
+                    }
+                    else
+                    {
+                        <div class="app-panel-inline-row">
+                            <span class="app-qbank-column__link">تحديد الكل</span>
+                            <button type="button" class="app-qbank-column__link app-qbank-column__link--action"
+                                    disabled="@(!_sectionTwoItems.Any(i => i.Checked))"
+                                    @onclick="@(() => ReturnCheckedToPool(_sectionTwoItems))">
+                                إرجاع المحدد «
+                            </button>
+                        </div>
+                    }
                 </div>
 
-                <AppField T="string" Type="AppFieldType.Text" Label="ابحث بنص السؤال" Value="@_searchQuestionBank" ValueChanged="@(v => _searchQuestionBank = v)"
+                <AppField T="string" Type="AppFieldType.Text" Label="بحث" Value="@_searchSectionTwo" ValueChanged="@(v => _searchSectionTwo = v)"
                           AdornmentIcon="@Icons.Material.Filled.Search" AdornmentPosition="Adornment.Start" />
 
-                @if (_questionBankItems.Count == 0)
+                @if (_sectionTwoItems.Count == 0)
                 {
                     <div class="app-qbank-empty-state">لا توجد أسئلة بعد</div>
                 }
                 else
                 {
                     <div class="app-qbank-column__list">
-                        @foreach (var item in _questionBankItems)
+                        @foreach (var item in _sectionTwoItems)
                         {
                             <AppQuestionCard PrimaryTagLabel="@item.PrimaryTagLabel"
                                              SecondaryTagLabel="@item.SecondaryTagLabel"
@@ -489,7 +495,7 @@
     // comment above for the full reading, not re-derived here.
     private readonly List<AppToggleOption<string>> _distributionOptions = new()
     {
-        new("drag", "سحب وإملاء", Icons.Material.Filled.DragIndicator, Adornment.Start),
+        new("drag", "سحب وإملاء", Icons.Material.Filled.DragIndicator, Adornment.Start, Note: "قريباً"),
         new("multi", "اختيار متعدد", Icons.Material.Filled.Checklist, Adornment.End),
     };
     private string _distributionMode = "drag";

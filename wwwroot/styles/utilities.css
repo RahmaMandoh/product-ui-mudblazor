@@ -1,3 +1,29 @@
 /* utilities.css — Bootstrap-like helpers: spacing, display, alignment,
    flex/grid, text, visibility, responsive helpers.
-   Empty stub — populated when the first component needs a utility class. */
+
+   First entries (CLAUDE.md §3.1): QuestionDistribution.razor had an inline
+   `style="display:flex;flex-direction:column;gap:16px;...padding:16px"`
+   wrapping two existing .app-panel-inline-row rows into a vertical stack —
+   a page-specific override with hardcoded values duplicating
+   --panel-space-gap/--panel-space-padding. Atomic, single-property classes
+   (not one bespoke composed class) so any future "stack a couple of rows
+   with the panel's own spacing" need reuses these directly, matching this
+   file's own "Bootstrap-like helpers" brief rather than adding another
+   one-off component class to components.css. */
+
+.u-flex-column {
+  display: flex;
+  flex-direction: column;
+}
+
+.u-items-start {
+  align-items: flex-start;
+}
+
+.u-gap-panel {
+  gap: var(--panel-space-gap);
+}
+
+.u-p-panel {
+  padding: var(--panel-space-padding);
+}

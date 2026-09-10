@@ -119,7 +119,7 @@
           individually-boxed stacked cells, matching TaskOne_Mobile.png
           (unchanged by this correction, that reference wasn't in question). *@
     <div class="app-panel app-sync-block">
-        <div class="app-sync-actions-row" style="--app-sync-actions-row-count: 2">
+        <div class="app-sync-actions-row">
             @* Rebuilt as AppActionBanner (Components/AppActionBanner.razor,
                Figma component "btn_box") — see that component's own header
                comment for the full anatomy/color-sync/specificity reasoning.
@@ -135,11 +135,13 @@
             <AppActionBanner Title="مزامنة يدوية لجميع المراكز"
                               Description="وصف المزامنة اليدوية"
                               ButtonLabel="بدء المزامنة اليدوية"
+                              Icon="@Icons.Material.Filled.Sync"
                               Bordered="false" />
 
             <AppActionBanner Title="مزامنة إجابات المرشحين للتقييم يدويا"
                               Description="بدء مزامنة إجابات المرشحين للتقييم المحدد للتاريخ إلى نظام التقييم يدويا"
                               ButtonLabel="بدء مزامنة إجابات المرشحين"
+                              Icon="@Icons.Material.Filled.ChangeCircle"
                               Bordered="false" />
         </div>
 
@@ -168,11 +170,15 @@
            المركز الرئيسي" sits rightmost in the Figma reference, so it is
            first in DOM order here.
 
-           .app-status-cards-row--embedded sets --app-status-cards-row-count
-           inline (3) — same custom-property convention the standalone
-           .app-status-cards-row (4-card row, further below) uses, for
-           consistency, even though only this one row needs it today. ==== *@
-        <div class="app-status-cards-row app-status-cards-row--embedded" style="--app-status-cards-row-count: 3">
+           .app-status-cards-row--embedded's own --app-status-cards-row-count
+           default (3, components.css) already matches this row's actual
+           card count, so no override is needed here — the standalone
+           .app-status-cards-row (4-card row, further below) DOES need one,
+           via the --cols-4 modifier class (no inline style: CLAUDE.md §5,
+           one source of truth — an inline style repeating a value the CSS
+           default already provides would be a second source of truth for
+           the same "3", not a legitimate override). ==== *@
+        <div class="app-status-cards-row app-status-cards-row--embedded">
             @* "اخر تشغيل" (last run) is a date+time PAIR in the reference, not
                one combined string — confirmed by a pixel-ruler crop of
                TaskOne_from_figma_design.png (CLAUDE.md rule 1), not assumed:
@@ -234,7 +240,13 @@
         </div>
     </div>
 
-    <MudText Typo="Typo.h6">صحة خط المزامنة</MudText>
+    <div class="app-panel app-sync-block">
+        <div class="app-panel-header">
+            <h2 class="app-panel-header__title">
+                <MudIcon Icon="@Icons.Material.Filled.Timeline" Color="Color.Inherit" Class="app-panel-header__title-icon" aria-hidden="true" />
+                صحة خط المزامنة
+            </h2>
+        </div>
 
     @* Row 2 (4 cards) — NOT part of the merged .app-sync-block pattern
        above: the Figma reference keeps each of these 4 cards individually
@@ -243,29 +255,8 @@
        AppStatusCard's Bordered="true" default (no Bordered attribute passed
        below). "الإقرارات" (rightmost in the reference) is first in DOM
        order, same right-to-left convention as the rest of the page. *@
-    <div class="app-status-cards-row" style="--app-status-cards-row-count: 4">
-        <AppStatusCard Title="الإقرارات"
-                       Icon="@Icons.Material.Filled.CheckCircle"
-                       ProgressPercent="62"
-                       StatusType="AppStatusType.Info"
-                       StatusLabel="قيد التشغيل"
-                       MetaRows="@(new List<(string, string)>())" />
-
-        <AppStatusCard Title="التوزيع"
-                       Icon="@Icons.Material.Filled.CloudUpload"
-                       ProgressPercent="74"
-                       StatusType="AppStatusType.Warning"
-                       StatusLabel="جزئي"
-                       MetaRows="@(new List<(string, string)>())" />
-
-        <AppStatusCard Title="المعالجة المركزية"
-                       Icon="@Icons.Material.Filled.ViewList"
-                       ProgressPercent="100"
-                       StatusType="AppStatusType.Success"
-                       StatusLabel="تمت"
-                       MetaRows="@(new List<(string, string)>())" />
-
-        <AppStatusCard Title="cbt جلب"
+    <div class="app-status-cards-row app-status-cards-row--cols-4">
+        <AppStatusCard Title="جلب ctb"
                        Icon="@Icons.Material.Filled.CloudDownload"
                        ProgressPercent="0"
                        StatusType="AppStatusType.Neutral"
@@ -275,7 +266,44 @@
                            ("متوسط الوقت", "0 م ث"),
                            ("المختبرون", "0"),
                        })" />
+        
+       <AppStatusCard Title="المعالجة المركزية"
+                       Icon="@Icons.Material.Filled.ViewList"
+                       ProgressPercent="100"
+                       StatusType="AppStatusType.Success"
+                       StatusLabel="تمت"
+                       MetaRows="@(new List<(string, string)>{
+                           ("تمت معالجة", "15380"),
+                           ("مرفوض", "40"),
+                           ("المراكز", "75"),
+                       })" />
+       
+        <AppStatusCard Title="التوزيع"
+                       Icon="@Icons.Material.Filled.CloudUpload"
+                       ProgressPercent="74"
+                       StatusType="AppStatusType.Warning"
+                       StatusLabel="جزئي"
+                       MetaRows="@(new List<(string, string)>{
+                           ("تم توزيع", "15250"),
+                           ("تمت المزامنة بنجاح","68"),
+                           ("جزئي", "4"),
+                           ("فشل", "3"),
+                       })" />
+        
+        <AppStatusCard Title="الإقرارات"
+                       Icon="@Icons.Material.Filled.CheckCircle"
+                       ProgressPercent="62"
+                       StatusType="AppStatusType.Info"
+                       StatusLabel="قيد التشغيل"
+                       MetaRows="@(new List<(string, string)>{
+                           ("تم الإقرار", "65"),
+                           ("قيد الانتظار", "7"),
+                           ("انتهاء المهلة", "3"),
+                       })" />
+        
     </div>
+    </div>
+    
 </MudStack>
 
 @code {

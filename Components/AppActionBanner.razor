@@ -62,11 +62,11 @@
 <div class="@RootClass">
     <div class="app-action-banner__content">
         <span class="app-action-banner__badge" aria-hidden="true">
-            <MudIcon Icon="@Icons.Material.Filled.Sync" Color="Color.Inherit" Size="Size.Medium" />
+            <MudIcon Icon="@Icon" Color="Color.Inherit" Size="Size.Medium" />
         </span>
         <MudStack Spacing="0">
-            <MudText Typo="Typo.body1">@Title</MudText>
-            <MudText Typo="Typo.body2">@Description</MudText>
+            <MudText Class="app-action-banner__title" Typo=" Typo.body1">@Title</MudText>
+            <MudText Class="app-action-banner__description" Typo="Typo.body2">@Description</MudText>
         </MudStack>
     </div>
     <AppButton Icon="@Icons.Material.Filled.ChevronLeft" 
@@ -91,4 +91,7 @@
     [Parameter] public bool Bordered { get; set; } = true;
 
     private string RootClass => (Bordered ? "app-panel " : "") + "app-action-banner";
+
+    [Parameter]
+    public string Icon { get; set; } = Icons.Material.Filled.Sync;
 }

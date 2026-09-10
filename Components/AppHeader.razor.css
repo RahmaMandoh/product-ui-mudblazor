@@ -46,13 +46,22 @@
 .app-header-shell ::deep .app-header-bar {
   display: flex;
   align-items: center;
-  /* Figma pins this icon cluster to the edge AWAY from the sidebar (a large
-     gap sits between the sidebar and the cluster) — confirmed by pixel
-     comparison against TaskOne_from_figma_design.png, not assumed. Flex's
-     default `justify-content: flex-start` instead pinned it to this row's
-     own inline-start edge, which in this RTL context is the side adjacent
-     to the sidebar — the opposite of the reference. */
-  justify-content: flex-end;
+  /* Mirrors the cluster's INTERNAL item order only — horizontal position is
+     unchanged from the prior flex-end/row fix (still the edge away from the
+     sidebar; see DECISIONS.md's original "pinned to the wrong edge" entry).
+     Confirmed via live Playwright measurement (getBoundingClientRect on each
+     child at 1920/800/375px): the cluster still renders at the same low-x,
+     away-from-sidebar edge either way — flex-direction only reverses which
+     end of the row is "start" for justify-content and reverses the order
+     items are laid out in, it does not relocate the row itself. Under RTL,
+     row + flex-end packed the group at main-end (left, away from sidebar)
+     reading left-to-right as sync-button..avatar. row-reverse swaps which
+     end is main-start/main-end AGAIN, so flex-start now packs the same
+     group at the same left/away-from-sidebar edge, with on-screen order
+     reversed to avatar..sync-button. Confirmed as the intended final
+     design (not a bug) — see DECISIONS.md. */
+  justify-content: flex-start;
+  flex-direction: row-reverse;
   gap: var(--header-item-gap);
   padding-block: var(--header-padding-block);
   padding-inline: var(--header-padding-inline);

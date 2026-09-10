@@ -34,10 +34,21 @@
    AppHeader.razor.css uses), per instruction not to define a new focus
    style for this component. References only .app-field-input, our own
    class — no MudBlazor class name touched, so this stays in this file
-   rather than mudblazor-overrides.css. */
+   rather than mudblazor-overrides.css. Applies to every field Type
+   (Text/Select/Date) by default — see DECISIONS.md for the Date-only
+   exception immediately below. */
 .app-field-input:focus-within {
   outline: var(--focus-ring-width) solid var(--focus-ring-color);
   outline-offset: var(--focus-ring-offset);
+}
+
+/* ---- Date field: shared ring intentionally suppressed on Focused only —
+   confirmed scoped to Date, not every field Type (see DECISIONS.md). The
+   MudBlazor border/bg/label Figma-specified Focused colors
+   (mudblazor-overrides.css, --field-color-*-focused) are the sole focus
+   indicator for Date; Text/Select keep both layers per CLAUDE.md §6. */
+.app-field-input--date:focus-within {
+  outline: none;
 }
 
 /* ---- Error row (icon + text; CLAUDE.md §6 — never color alone) ---- */
@@ -362,9 +373,19 @@
    flex-start already packs content at the right — same "plain DOM order"
    convention as everywhere else in this file. Generic on purpose (CLAUDE.md
    §3.1) — any future panel row that's "a couple of items, right-packed"
-   reuses this instead of a new one-off class. */
+   reuses this instead of a new one-off class.
+
+   flex-wrap added after a confirmed 375px overflow: this class is also
+   reused for the "توزيع الأسئلة" toggle-group + alert pairing, whose
+   combined content is wider than a 375px viewport with no wrap, which
+   inflated the whole content column and clipped ~70px off-screen with no
+   way to scroll to it. Wrap is a no-op safety net for this class's other
+   (shorter) call sites — confirmed none of them need to actually wrap at
+   any tested width, so this only ever activates when content doesn't fit,
+   never changes the desktop/tablet layout. */
 .app-panel-inline-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: var(--panel-space-gap);
 }
@@ -550,12 +571,20 @@
   gap: 0; /* dividers replace gap-based spacing entirely, per instruction */
 }
 
+/* minmax(0, 1fr), not bare 1fr, on every grid-template-columns below: a
+   bare `1fr` track is `minmax(auto, 1fr)` per spec, so a card whose content
+   can't shrink to its equal share keeps its min-content width instead,
+   growing the grid's total occupied width past the container and pushing
+   the row's own edge past its parent — found via the tablet-width (768px)
+   responsive re-check on the 4-card row below (CLAUDE.md §7), a pre-existing
+   bug in this shared rule (unrelated to the inline-style removal that
+   prompted the re-check), not limited to that one row. */
 .app-sync-actions-row {
-  grid-template-columns: repeat(var(--app-sync-actions-row-count, 2), 1fr);
+  grid-template-columns: repeat(var(--app-sync-actions-row-count, 2), minmax(0, 1fr));
 }
 
 .app-status-cards-row--embedded {
-  grid-template-columns: repeat(var(--app-status-cards-row-count, 3), 1fr);
+  grid-template-columns: repeat(var(--app-status-cards-row-count, 3), minmax(0, 1fr));
 }
 
 @media (min-width: 601px) {
@@ -570,11 +599,16 @@
     padding-inline-start: 0;
   }
 
-  .app-sync-actions-row > *:last-child,
-  .app-status-cards-row--embedded > *:last-child {
-    padding-inline-end: 0;
-  }
-
+  /* Divider line only (border-inline-end), NOT an individually-boxed/
+     rounded card — reverted back to this session's earlier regression
+     (see DECISIONS.md), which had briefly given every item its own full
+     border + hardcoded padding/radius. That contradicts the "CORRECTED
+     this pass" .app-sync-block comment immediately above this rule block,
+     itself confirmed against the Figma reference: ONE merged panel with
+     divider lines between items, not individually-boxed cards. Restoring
+     the divider-only pattern and tokenizing it (--panel-color-stroke was
+     already correct; --field-stroke-width already correct) fixes both the
+     hardcoded-value violation and the design regression in one change. */
   .app-sync-actions-row > *:not(:last-child),
   .app-status-cards-row--embedded > *:not(:last-child) {
     border-inline-end: var(--field-stroke-width) solid var(--panel-color-stroke);
@@ -631,8 +665,16 @@
    either way). ---- */
 .app-status-cards-row {
   display: grid;
-  grid-template-columns: repeat(var(--app-status-cards-row-count, 3), 1fr);
+  grid-template-columns: repeat(var(--app-status-cards-row-count, 3), minmax(0, 1fr));
   gap: var(--panel-space-gap);
+}
+
+/* "صحة خط المزامنة" row (SyncStatus.razor) is the only 4-card use of this
+   base class — sets the custom property via a class, not an inline style
+   (CLAUDE.md §5: the value lives here, once, instead of also being written
+   inline at the call site). */
+.app-status-cards-row--cols-4 {
+  --app-status-cards-row-count: 4;
 }
 
 @media (max-width: 600px) { /* --breakpoint-sm */
@@ -909,6 +951,7 @@
   align-items: center;
   gap: var(--alert-space-gap);
   max-width: 100%;
+  height: fit-content;
   padding: var(--alert-space-padding-block) var(--alert-space-padding-inline);
   border-radius: var(--alert-radius);
   font-family: var(--alert-font-family);
@@ -1061,6 +1104,17 @@
 
 .app-toggle-group__icon {
   flex: none;
+}
+
+/* Status note on an option that's selectable/visible but not yet wired up
+   (e.g. "(قريباً)" on "سحب وإملاء" — see DECISIONS.md). No separate color
+   token: inherits the item's own already-contrast-safe text color
+   (white when selected, --toggle-color-text-unselected otherwise) rather
+   than risking a new independent color failing contrast against the
+   selected item's blue fill — CLAUDE.md §6 is satisfied by the TEXT
+   itself, not by dimming/color alone. */
+.app-toggle-group__note {
+  margin-inline-start: var(--space-8);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1220,21 +1274,36 @@
    (CLAUDE.md: don't design a premature abstraction for 3 known, different
    call sites).
    ========================================================================== */
+/* minmax(0, 1fr), not bare 1fr — found live (not assumed) via a 375px
+   scrollWidth/clientWidth check (445 vs 375, a real 70px clip with no
+   scrollbar to reach it): bare `1fr` computes as `minmax(auto, 1fr)`, so
+   each track's MINIMUM is its own content's min/max-content size. With
+   .app-qbank-column containing a MudBlazor outlined search field (its
+   label/fieldset alone floor it well past what fits in a narrow track),
+   that floor exceeded both the 375px mobile viewport (grid blowout, no
+   overflow clipping anywhere above it) and, at 800px tablet, exceeded an
+   equal third — forcing the two empty-state columns down to ~136px each
+   while "بنك العناصر" claimed the rest. minmax(0, 1fr) removes the
+   content-based floor so tracks actually distribute the available space;
+   .app-qbank-column's own min-width: 0 below is required alongside this —
+   a grid item's DEFAULT min-width is also content-based regardless of its
+   track's minmax, so both need fixing together, not just the track. */
 .app-qbank-columns {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--qbank-columns-gap);
 }
 
 @media (max-width: 600px) { /* --breakpoint-sm — same token/tier as every other responsive rule in this file */
   .app-qbank-columns {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
 }
 
 .app-qbank-column {
   display: flex;
   flex-direction: column;
+  min-width: 0; /* see the grid-blowout note above .app-qbank-columns */
   gap: var(--qbank-column-space-header-gap);
   padding: var(--qbank-column-space-padding);
   border-radius: var(--panel-radius);
@@ -1357,4 +1426,15 @@
   .app-question-card * {
     transition: none !important;
   }
+}
+
+/* appaction banner title and description */
+.app-action-banner__title {
+  font-size: var(--font-size-regular-18);
+  font-weight: var(--font-weight-medium);
+}
+
+.app-action-banner__description {
+  font-size: var(--font-size-regular-14);
+  font-weight: var(--font-weight-regular);
 }

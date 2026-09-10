@@ -78,7 +78,13 @@
             {
                 <MudIcon Icon="@option.Icon" Color="Color.Inherit" Class="app-toggle-group__icon" aria-hidden="true" />
             }
-            <span class="app-toggle-group__label">@option.Label</span>
+            <span class="app-toggle-group__label">
+                @option.Label
+                @if (!string.IsNullOrEmpty(option.Note))
+                {
+                    <span class="app-toggle-group__note">(@option.Note)</span>
+                }
+            </span>
             @if (option.IconPosition == Adornment.End)
             {
                 <MudIcon Icon="@option.Icon" Color="Color.Inherit" Class="app-toggle-group__icon" aria-hidden="true" />
